@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+.vercel/
+.env
+.env.*
+!.env.example
+.mefagram/
+.superpowers/
+coverage/
+playwright-report/
+test-results/
+*.log
+.DS_Store
+
