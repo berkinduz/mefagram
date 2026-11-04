@@ -59,7 +59,7 @@ export async function createDatabase(
     const client = new PGlite(
       options.dataDir === "memory://"
         ? undefined
-        : resolve(options.dataDir ?? ".mefagram/db"),
+        : resolve(/*turbopackIgnore: true*/ options.dataDir ?? ".mefagram/db"),
     );
     await client.waitReady;
     database = {

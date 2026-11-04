@@ -8,5 +8,5 @@ const statements = await Promise.all(
 );
 await writeFile(
   "src/lib/db/auth-migration.ts",
-  `// Generated from migrations/auth; regenerate with npm run db:generate.\nexport const authMigration = ${JSON.stringify(statements.join("\n"))};\n`,
+  `// Generated from migrations/auth; initial auth-v1 snapshot; do not rewrite applied migration history.\nexport const authMigration = ${JSON.stringify(statements.join("\n"))};\n`,
 );

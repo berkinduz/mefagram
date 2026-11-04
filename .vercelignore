@@ -1,0 +1,7 @@
+.mefagram
+.superpowers
+.env
+.env.*
+test-results
+playwright-report
+.git

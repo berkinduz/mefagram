@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const config: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite", "pg"],
   poweredByHeader: false,
+  outputFileTracingExcludes: {
+    "/*": [
+      "./.mefagram/**/*",
+      "./.superpowers/**/*",
+      "./.env*",
+      "./test-results/**/*",
+      "./playwright-report/**/*",
+    ],
+  },
   async headers() {
     return [
       {

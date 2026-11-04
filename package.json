@@ -12,7 +12,12 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:e2e": "playwright test",
-    "setup": "tsx --env-file-if-exists=.env.local scripts/setup.ts"
+    "setup": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
+    "agent": "tsx scripts/agent.ts",
+    "verify:integration": "tsx scripts/verify-integration.ts",
+    "verify:bundle": "node scripts/verify-bundle.mjs",
+    "schema:export": "tsx scripts/export-schema.ts",
+    "postbuild": "node scripts/verify-bundle.mjs"
   },
   "engines": {
     "node": ">=24"

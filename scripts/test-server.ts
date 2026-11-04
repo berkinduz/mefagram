@@ -24,7 +24,7 @@ const app = spawn(
   process.execPath,
   [
     "node_modules/next/dist/bin/next",
-    "dev",
+    process.env.MEFAGRAM_TEST_PRODUCTION === "1" ? "start" : "dev",
     "--hostname",
     "127.0.0.1",
     "--port",
