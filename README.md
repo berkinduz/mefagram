@@ -1,12 +1,12 @@
-# Mefagram
+# Mefagram — From agent conversations to living diagrams
 
 A private diagram workspace where AI agents maintain the map and people read, explore and analyze it.
 
 Free, MIT-licensed and self-hosted. Interactive React Flow canvas, hierarchical drill-down, notes and sources, search, revision history, JSON import/export, and authenticated HTTP MCP. No model API key, paid canvas license or Mefagram subscription is required. The current interface is in Turkish; the data and integration contracts are language-independent.
 
-![Mefagram reading view with the optional product-studio template and node details](docs/assets/workspace.png)
+![Fictional Relay newsletter workflow in Mefagram, with an interactive canvas and editorial notes](docs/assets/newsletter-demo.png)
 
-The screenshot uses the optional proposed template and a synthetic account.
+The screenshot uses a completely fictional newsletter workflow and a demo account. [Download the example JSON](docs/examples/newsletter.json) to explore it in your own workspace.
 
 ## One workspace, all your agents
 

@@ -1,0 +1,285 @@
+{
+  "format": "mefagram",
+  "version": 1,
+  "source": {
+    "id": "c2f25474-a5df-4664-8455-a486defcf558",
+    "revision": 1
+  },
+  "diagram": {
+    "title": "Relay newsletter workflow",
+    "description": "Fictional demo: turn community questions into a monthly newsletter.",
+    "tags": [
+      "Fictional demo"
+    ],
+    "document": {
+      "edges": [
+        {
+          "id": "phase-0",
+          "kind": "flow",
+          "label": "",
+          "source": "ideas",
+          "target": "theme"
+        },
+        {
+          "id": "phase-1",
+          "kind": "flow",
+          "label": "",
+          "source": "theme",
+          "target": "draft"
+        },
+        {
+          "id": "phase-2",
+          "kind": "flow",
+          "label": "",
+          "source": "draft",
+          "target": "review"
+        },
+        {
+          "id": "phase-3",
+          "kind": "flow",
+          "label": "",
+          "source": "review",
+          "target": "publish"
+        },
+        {
+          "id": "phase-4",
+          "kind": "flow",
+          "label": "",
+          "source": "publish",
+          "target": "learn"
+        },
+        {
+          "id": "feedback-loop",
+          "kind": "feedback",
+          "label": "Ideas for the next issue",
+          "source": "learn",
+          "target": "ideas"
+        },
+        {
+          "id": "ideas-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "questions",
+          "target": "pitch"
+        },
+        {
+          "id": "theme-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "shortlist",
+          "target": "outline"
+        },
+        {
+          "id": "draft-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "lead",
+          "target": "links"
+        },
+        {
+          "id": "review-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "clarity",
+          "target": "check"
+        },
+        {
+          "id": "publish-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "preview",
+          "target": "schedule"
+        },
+        {
+          "id": "learn-steps",
+          "kind": "flow",
+          "label": "",
+          "source": "responses",
+          "target": "next"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "ideas",
+          "kind": "phase",
+          "tags": [],
+          "label": "Collect ideas",
+          "notes": "Keep one useful question per card. This demo uses invented content only.",
+          "sources": [],
+          "description": "Gather questions and story suggestions from the fictional community."
+        },
+        {
+          "id": "questions",
+          "kind": "step",
+          "tags": [],
+          "label": "Collect questions",
+          "notes": "",
+          "sources": [],
+          "parentId": "ideas",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "pitch",
+          "kind": "step",
+          "tags": [],
+          "label": "Pitch a short story",
+          "notes": "",
+          "sources": [],
+          "parentId": "ideas",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "theme",
+          "kind": "phase",
+          "tags": [],
+          "label": "Choose a theme",
+          "notes": "Example theme: small changes that make a shared workspace better.",
+          "sources": [],
+          "description": "Give the next issue one clear promise to its readers."
+        },
+        {
+          "id": "shortlist",
+          "kind": "step",
+          "tags": [],
+          "label": "Shortlist ideas",
+          "notes": "",
+          "sources": [],
+          "parentId": "theme",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "outline",
+          "kind": "step",
+          "tags": [],
+          "label": "Outline the issue",
+          "notes": "",
+          "sources": [],
+          "parentId": "theme",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "draft",
+          "kind": "phase",
+          "tags": [],
+          "label": "Write the draft",
+          "notes": "Use one lead story, two useful links and a closing question.",
+          "sources": [],
+          "description": "Turn the outline into a short, practical newsletter."
+        },
+        {
+          "id": "lead",
+          "kind": "step",
+          "tags": [],
+          "label": "Draft the lead story",
+          "notes": "",
+          "sources": [],
+          "parentId": "draft",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "links",
+          "kind": "step",
+          "tags": [],
+          "label": "Add two sample links",
+          "notes": "",
+          "sources": [],
+          "parentId": "draft",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "review",
+          "kind": "phase",
+          "tags": [],
+          "label": "Review & edit",
+          "notes": "Read the issue from a new reader’s perspective. Keep the lead short, explain unfamiliar terms and leave one clear takeaway.",
+          "sources": [
+            {
+              "url": "https://example.org/editorial-guide",
+              "label": "Example editorial guide"
+            }
+          ],
+          "description": "Check the story, tighten the copy and review the links."
+        },
+        {
+          "id": "clarity",
+          "kind": "step",
+          "tags": [],
+          "label": "Edit for clarity",
+          "notes": "",
+          "sources": [],
+          "parentId": "review",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "check",
+          "kind": "step",
+          "tags": [],
+          "label": "Check sample links",
+          "notes": "",
+          "sources": [],
+          "parentId": "review",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "publish",
+          "kind": "phase",
+          "tags": [],
+          "label": "Publish the issue",
+          "notes": "A fictional publishing step; this example sends no emails.",
+          "sources": [],
+          "description": "Prepare the final issue and share it with the demo audience."
+        },
+        {
+          "id": "preview",
+          "kind": "step",
+          "tags": [],
+          "label": "Preview the issue",
+          "notes": "",
+          "sources": [],
+          "parentId": "publish",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "schedule",
+          "kind": "step",
+          "tags": [],
+          "label": "Schedule a demo issue",
+          "notes": "",
+          "sources": [],
+          "parentId": "publish",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "learn",
+          "kind": "phase",
+          "tags": [],
+          "label": "Read the feedback",
+          "notes": "Which section helped readers most? Turn their questions into ideas for the next issue.",
+          "sources": [],
+          "description": "Collect the next round of questions and improve the following issue."
+        },
+        {
+          "id": "responses",
+          "kind": "step",
+          "tags": [],
+          "label": "Review sample responses",
+          "notes": "",
+          "sources": [],
+          "parentId": "learn",
+          "description": "A fictional step in the Relay newsletter demo."
+        },
+        {
+          "id": "next",
+          "kind": "step",
+          "tags": [],
+          "label": "Plan the next issue",
+          "notes": "",
+          "sources": [],
+          "parentId": "learn",
+          "description": "A fictional step in the Relay newsletter demo."
+        }
+      ],
+      "schemaVersion": 1
+    }
+  }
+}
