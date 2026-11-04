@@ -137,4 +137,59 @@ describe("real MCP client to persistent diagram tools", () => {
       code: "INSUFFICIENT_SCOPE",
     });
   });
+
+  test("shares one canonical diagram across independent agents and rejects a concurrent stale write", async () => {
+    const first = await connect(["diagrams:read", "diagrams:write"]);
+    const second = await connect(["diagrams:read", "diagrams:write"]);
+    const created = await first.callTool({
+      name: "create_diagram",
+      arguments: {
+        title: "Shared workspace",
+        document: {
+          schemaVersion: 1,
+          nodes: [{ id: "shared", label: "Shared node" }],
+          edges: [],
+        },
+        mutationId: "shared-create",
+      },
+    });
+    const { id, revision } = created.structuredContent as {
+      id: string;
+      revision: number;
+    };
+    expect(
+      (await second.callTool({ name: "get_diagram", arguments: { id } }))
+        .structuredContent,
+    ).toMatchObject({ id, revision });
+    const results = await Promise.all(
+      [first, second].map((client, index) =>
+        client.callTool({
+          name: "update_diagram",
+          arguments: {
+            id,
+            expectedRevision: revision,
+            operations: [
+              {
+                op: "update_node",
+                id: "shared",
+                changes: { notes: `Agent ${index}` },
+              },
+            ],
+            mutationId: `shared-update-${index}`,
+          },
+        }),
+      ),
+    );
+    expect(results.filter((result) => !result.isError)).toHaveLength(1);
+    expect(
+      results.find((result) => result.isError)?.structuredContent,
+    ).toMatchObject({ code: "REVISION_CONFLICT" });
+    const reads = await Promise.all(
+      [first, second].map((client) =>
+        client.callTool({ name: "get_diagram", arguments: { id } }),
+      ),
+    );
+    expect(reads[0].structuredContent).toEqual(reads[1].structuredContent);
+    expect(reads[0].structuredContent).toMatchObject({ id, revision: 2 });
+  });
 });

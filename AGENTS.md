@@ -10,6 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Mefagram workspace
 
+- Each owner has one canonical installation/database; all their agents share its authenticated MCP endpoint. Clones are independent software installations, not data synchronization. Keep the common project free of personal deployment assumptions.
 - Run `npm run setup` once before starting the app. Keep `.mefagram`, `.env.local`, tokens and personal diagram exports out of git and deployment bundles.
 - For content work, use the running MCP endpoint or `npm run agent -- ...`; do not open or edit its live PGlite files. Read [docs/agent-integration.md](docs/agent-integration.md) first.
 - Read a diagram before patching it. Preserve stable IDs/unrelated content. Supply expected revision and a unique mutation ID; retry an identical failed response with the same ID. Reconcile revision conflicts explicitly.

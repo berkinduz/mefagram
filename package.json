@@ -12,12 +12,13 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test:e2e": "playwright test",
-    "setup": "tsx --env-file-if-exists=.env.local scripts/setup.ts",
+    "setup": "tsx scripts/setup.ts",
     "agent": "tsx scripts/agent.ts",
     "verify:integration": "tsx scripts/verify-integration.ts",
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "schema:export": "tsx scripts/export-schema.ts",
-    "postbuild": "node scripts/verify-bundle.mjs"
+    "postbuild": "node scripts/verify-bundle.mjs",
+    "verify:installation": "tsx scripts/verify-installation.ts"
   },
   "engines": {
     "node": ">=24"
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "2.4.0",
+    "@next/env": "16.4.5",
     "@playwright/test": "1.64.1",
     "@types/node": "26.6.6",
     "@types/pg": "8.23.1",
@@ -55,5 +57,14 @@
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "5.1.0"
+  },
+  "description": "Self-hosted diagram workspace for AI agents and human readers, with authenticated MCP and portable data.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/berkinduz/mefagram.git"
+  },
+  "bugs": {
+    "url": "https://github.com/berkinduz/mefagram/issues"
   }
 }

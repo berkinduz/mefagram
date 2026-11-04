@@ -11,7 +11,7 @@ for (const path of [
   await rm(path, { recursive: true, force: true });
 const setup = spawn(
   process.execPath,
-  ["--import", "tsx", "scripts/setup.ts", "--e2e"],
+  ["--import", "tsx", "scripts/setup.ts", "--e2e", "--example", "mefa-apps"],
   { stdio: "inherit" },
 );
 await new Promise<void>((resolve, reject) =>
@@ -30,7 +30,7 @@ const app = spawn(
     "--port",
     "3100",
   ],
-  { env: { ...process.env, ...env }, stdio: "inherit" },
+  { env: { ...process.env, ...env, DATABASE_URL: "" }, stdio: "inherit" },
 );
 for (const signal of ["SIGTERM", "SIGINT"] as const)
   process.on(signal, () => app.kill(signal));

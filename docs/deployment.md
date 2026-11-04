@@ -1,28 +1,46 @@
-# Deployment and ownership
+# Deployment and shared ownership
 
-The working default costs no hosting fee: run the app and its persistent PGlite database on the Mac. One Node process owns that local database. There is no silent paid service, model API call, public data bucket or browser-only canonical storage.
+Deploy one private installation per owner. The browser and all of that owner's agents use the same origin, authenticated MCP endpoint and canonical database. This repository is reusable software, not a centrally operated public diagram service. There is no model API or paid Mefagram plan.
 
-## Shared hosted deployment
+## Choose the storage boundary
 
-The app supports external Postgres through `DATABASE_URL` using `pg` and transactional migrations. Vercel is a candidate host, not a required dependency. Its filesystem must never hold the canonical DB; startup on Vercel without `DATABASE_URL` fails explicitly.
+| Runtime                                            | Canonical storage                    | Requirement                                                |
+| -------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| Local desktop or persistent single-process server  | PGlite directory on a durable volume | Exactly one Node process per directory; stopped-DB backups |
+| Serverless, ephemeral disk, multiple app processes | External Postgres via `DATABASE_URL` | Durable database, TLS and appropriate connection pooling   |
 
-As checked on 2026-11-04, [Vercel Hobby](https://vercel.com/docs/plans/hobby) limits usage to personal, non-commercial projects. Do not assume a business workflow qualifies solely because one person uses it. [Neon Free](https://neon.com/pricing) currently includes 1 GB storage and 100 CU-hours per project/month. Free quotas, availability and commercial eligibility must be checked when deploying. No paid trial or plan was activated here.
+Vercel and Netlify reject database initialization without `DATABASE_URL`. Set `MEFAGRAM_REQUIRE_DATABASE_URL=true` on other stateless platforms to enforce the same rule. An agent's temporary checkout or an ephemeral host filesystem must not become the only copy of your diagrams.
 
-Deployment steps when accounts and an eligible plan are available:
+Node.js 24+ is required. `npm start` binds to loopback by default. A container or platform requiring a public listener can run `npm start -- --hostname 0.0.0.0 --port <port>`, behind its HTTPS proxy. The configured public origin must match the URL people and agents actually use.
 
-1. Provision a private Postgres database and obtain its TLS connection string, preferably a pooled endpoint for serverless instances. Choose the free plan explicitly.
-2. Prepare a private `.env.local` with `DATABASE_URL`, final HTTPS `BETTER_AUTH_URL`, owner email, and independently generated random `BETTER_AUTH_SECRET`/`MEFAGRAM_SETUP_KEY` (at least 32 characters each). `.env.example` documents names only.
-3. Stop any local process using the same local DB. Run `npm run setup` with that environment to migrate the hosted DB and bootstrap its single owner. Keep the resulting private credential file. Browser signup is otherwise closed.
-4. Set the same server environment variables on the host. Do not prefix secrets with `NEXT_PUBLIC_`. Keep preview and production databases/URLs separate. Do not point previews at personal production data.
-5. Deploy this source with `npm ci` and `npm run build`. Postinstall prepares the ELK browser worker. Set a supported Node.js 24 runtime.
-6. Check the final HTTPS URL, login, create/update/reload, an independent session and token revocation. Use `npm run verify:bundle` to reject private files in traced bundles. `.vercelignore` also excludes local credentials/data from CLI upload.
-7. Export/import a local diagram if transferring content; this does not transfer accounts, credentials or history. For a full local backup, stop the app and copy `.mefagram` plus `.env.local` privately. For hosted DBs, use the provider's backup/export tools and keep an independent backup.
-8. Add the final `/api/mcp` endpoint to the intended agent. Run its real OAuth/consent or token connection, invoke create/update/read, then verify the same saved revision in the browser. Keep this evidence separate from localhost tests.
+## Bootstrap a hosted installation
 
-Changing the public origin changes OAuth audience, issuer and cookie context; reconnect agents after an origin change. Do not deploy until a usable durable database and valid auth secrets exist. Keep session and Postgres credentials private even though this source repository is public.
+1. Choose an eligible host and, where needed, a private Postgres database. Inspect the provider's current free quotas and usage controls; the software does not provision or upgrade paid services.
+2. In a separate trusted bootstrap checkout, prepare `.env.local` with the final HTTPS `BETTER_AUTH_URL`, `MEFAGRAM_OWNER_EMAIL`, optional `MEFAGRAM_OWNER_NAME`, and `DATABASE_URL` for external Postgres. Start from `.env.example`. Blank auth secrets are generated by setup; supplied secrets must be independent random values of at least 32 characters.
+3. Run `npm ci` and `npm run setup`. This migrates the selected database and creates its single owner. Preserve `.env.local` and `.mefagram/local-access.json` privately. Do not upload that access file or a local DB to the host.
+4. Put the resulting `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `MEFAGRAM_SETUP_KEY`, `MEFAGRAM_OWNER_EMAIL` and `DATABASE_URL` into the host's server-side environment. Set the stateless guard above where applicable. Never prefix these secrets with `NEXT_PUBLIC_`.
+5. Deploy with `npm ci` and `npm run build`, then start using the host's Node/Next.js runtime. `postinstall` prepares the browser layout worker; `postbuild` checks traced bundles for private files. Keep preview and production databases and origins separate.
+6. Connect each agent to `<public-origin>/api/mcp` using OAuth or its own scoped token. Give agents MCP credentials, not database or hosting administrator credentials. A thin terminal client can run `MEFAGRAM_URL=<origin> npm run agent -- list` with `MEFAGRAM_AGENT_TOKEN` supplied from its secret store.
 
-## Current external limitation
+Browser signup is closed; setup is the administrative bootstrap path. Running setup again preserves the existing owner and secrets. Stop the app before local PGlite setup or backup operations. For external Postgres, coordinate migration/bootstrap with deployments rather than running it independently on every request.
 
-The Vercel connector can list the user's team, but listing integration configurations returned **403 forbidden: no permission to list the integration configuration**. The CLI fallback subsequently completed its login flow and successfully listed the existing Neon Free installation. A scoped team read confirmed the personal team uses Hobby. No Neon database or Vercel deployment was created: the default delivery remains the explicitly allowed local installation, with no extra spending. Mefa Apps business use should not silently be treated as eligible Hobby usage. Actual Dot connectivity was not tested.
+Changing the origin changes OAuth issuer, audience and cookie context. Update the configuration deliberately and reconnect clients. Copying the repository to another computer transfers code only; export/import diagrams or migrate/restore the actual database when transferring data.
 
-The useful next external step is selecting an eligible zero-cost host/data setup, followed by a real Dot connection. The local application does not depend on completing that step. The now-authenticated CLI may be used for that work; the connector's separate 403 is not a blanket deployment prohibition.
+## Verify the real deployment
+
+Before relying on a hosted installation, record these checks against its final HTTPS origin:
+
+- Sign in, create/update a diagram, reload, and open it in an independent browser session.
+- Write through an actual remote MCP client; read the saved revision in the browser and a second agent.
+- Send concurrent edits using the same expected revision; confirm one conflict and no silent overwrite.
+- Restart/redeploy the application and confirm the same data and credentials remain usable.
+- Revoke a personal token and confirm its next MCP call is denied. Issued OAuth JWTs can remain valid for up to five minutes.
+- Exercise an independent database backup and restoration with matching auth configuration.
+
+Local production HTTP/browser tests and native Postgres CI are useful evidence, but do not certify a particular cloud host or Dot connection. Those require the real endpoint/client checks above. No personal hosted instance is provisioned by this release.
+
+## Cost, privacy and recovery
+
+Local use needs no hosting fee. Free hosting is provider-specific: for example, [Vercel Hobby](https://vercel.com/docs/plans/hobby) has eligibility restrictions, and database providers impose storage/compute limits. Check current terms before selecting one; a business workflow is not automatically eligible for a personal plan.
+
+Use provider database backups plus an independent export, and preserve auth secrets separately. For local PGlite, copy the entire stopped database and private configuration as described in [installation](installation.md). Diagram JSON transfers current content, not account credentials or full history. Keep secrets and private diagrams out of commits, issue reports, build contexts and release assets.

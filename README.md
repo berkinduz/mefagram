@@ -1,34 +1,54 @@
 # Mefagram
 
-Agentların oluşturup güncellediği; senin süreçleri, fikirleri ve projeleri okuyup analiz ettiğin kişisel diyagram alanı.
+A private diagram workspace where AI agents maintain the map and people read, explore and analyze it.
 
-React Flow canvas, açılabilir aşamalar, not/kaynak paneli, arama ve liste görünümü içerir. İnsan arayüzü okuma modunda açılır; düğüm ve bağlantı düzenleme ayrıca açılır. Agentlar aynı kayıt katmanına kimliği doğrulanmış MCP araçlarıyla erişir. Model API anahtarı veya ek AI aboneliği gerekmez.
+Free, MIT-licensed and self-hosted. Interactive React Flow canvas, hierarchical drill-down, notes and sources, search, revision history, JSON import/export, and authenticated HTTP MCP. No model API key, paid canvas license or Mefagram subscription is required. The current interface is in Turkish; the data and integration contracts are language-independent.
 
-## Mac’te çalıştır
+## One workspace, all your agents
 
-Node.js 24+ gerekir. Repo dizininde:
+```mermaid
+flowchart LR
+  A[Your agents] -->|Scoped OAuth or token| M[Shared MCP endpoint]
+  M --> D[(Your canonical database)]
+  D --> W[Browser workspace]
+  W --> U[You: read and analyze]
+```
+
+Each installation has its own owner, database and credentials. Connect all of **your** agents to that installation's `/api/mcp` endpoint: updates appear in the same browser workspace. Other developers can clone the project and run independent installations. Cloning code onto every agent computer does not synchronize diagram data.
+
+## Start locally
+
+Requires Node.js 24+ and a desktop browser. No Docker or separate database installation is needed.
 
 ```sh
+git clone https://github.com/berkinduz/mefagram.git
+cd mefagram
 npm ci
-npm run setup
+npm run setup -- --name "Your name" --email you@example.com
 npm run build
 npm start
 ```
 
-[Çalışma alanını aç](http://127.0.0.1:3000). İlk girişin e-posta/parolası `.mefagram/local-access.json` içindedir. Bu dosyada agent anahtarı da vardır; git tarafından dışlanır. Sonraki açılışlarda `npm start` yeterlidir. Geliştirirken `npm run dev` kullan; iki sunucuyu aynı anda çalıştırma.
+Open [127.0.0.1:3000](http://127.0.0.1:3000). Your generated login password and bootstrap agent token are stored privately in `.mefagram/local-access.json`; setup prints the path without printing the secrets. New workspaces start empty. Name/email options are optional; the email is a login identifier, not an email delivery service.
 
-`setup` gerçek bir yerel Postgres veritabanı (PGlite), özel hesap ve başlangıç Mefa Apps haritası oluşturur. Mevcut kayıtları sıfırlamaz. Sunucu çalışırken aynı veritabanıyla `setup` çalıştırma. Mefa Apps haritasındaki 28 düğüm başlangıç önerisidir; stüdyonun doğrulanmış işleyişi olarak sunulmaz.
+Subsequent starts only need `npm start`. Use `npm run dev` for development. Stop the app before rerunning setup; one Node process owns a local PGlite directory. For an optional proposed product-studio example, run `npm run setup -- --example mefa-apps` while stopped. Repeating setup preserves existing data, credentials and edits to that example.
 
-## Kullanım
+[Installation, updates and backup](docs/installation.md) · [Türkçe başlangıç](docs/README.tr.md)
 
-- Soldan bir diyagram aç veya ad/içerik araması yap.
-- Canvas’ı sürükleyerek gez; trackpad, yakınlaştırma kontrolleri ve **F** ile incele. Bir aşamadaki **alt adım** düğmesi daha küçük süreci açar.
-- Düğüm seçince açıklama, notlar, kaynaklar ve ilişkiler sağda açılır. Klavyeyle düğüme odaklanıp Enter/boşluk ile de seçebilirsin. Liste görünümü daha uzun metinler için alternatiftir.
-- **Düzenle** ile düğüm/bağlantı ekle, taşı veya düzenle. Odaklanan düğümü ok tuşlarıyla taşıyabilirsin; Shift adımı büyütür. Yalnızca sunucunun onayladığı değişiklikler kaydedilmiş sayılır.
-- **⋯** menüsünden JSON dışa aktarma, arşiv ve sürüm geçmişi açılır. Önceki sürümü geri yüklemek yeni sürüm oluşturur.
-- Agent değişiklikleri okuma modunda görünür sekmede yaklaşık 15 saniyede kontrol edilir. Yenile düğmesi hemen son kaydı açar.
+## Read and explore
 
-## Agent erişimi
+- Search and open named diagrams from the library. The workspace opens in reading mode.
+- Pan, zoom and fit the canvas; expand a phase to inspect its smaller process.
+- Select a node for descriptions, notes, sources and relationships. A list view supports longer text and keyboard navigation.
+- Enable editing deliberately to change nodes and edges. Only server-acknowledged changes count as saved.
+- Export/import portable JSON, archive a diagram, or restore an earlier revision as a new revision.
+- Agent changes are checked roughly every 15 seconds in a visible reading tab; refresh opens the latest saved version immediately.
+
+Semantic nodes, edges and hierarchy are stored independently of their visual layout. Keep large maps readable by separating phases and placing detailed evidence in node notes and sources.
+
+## Connect agents
+
+With the local server running:
 
 ```sh
 npm run agent -- list
@@ -37,32 +57,41 @@ npm run agent -- tools
 npm run agent -- call update_diagram /absolute/path/to/arguments.json
 ```
 
-Bu komutlar veritabanını doğrudan açmaz; çalışan uygulamanın MCP adresini kullanır. Yerel erişim dosyasını otomatik okur. Remote agent için `MEFAGRAM_URL` ve `MEFAGRAM_AGENT_TOKEN` veya özel `MEFAGRAM_ACCESS_FILE` tanımlanabilir.
+This is a real MCP client, not a direct database editor. It reads the local private access file. A remote agent can use `MEFAGRAM_URL` and `MEFAGRAM_AGENT_TOKEN`, or an OAuth-capable client can authorize against `<your-origin>/api/mcp`.
 
-MCP adresi: `http://127.0.0.1:3000/api/mcp`. OAuth 2.1/PKCE ve kişisel Bearer anahtarları desteklenir. Arayüzdeki **Agent bağlantıları** panelinden kısıtlı süreli anahtar oluşturup iptal edebilirsin. [Agent rehberi](docs/agent-integration.md) araçları, güncelleme sözleşmesini ve Codex bağlantısını açıklar.
+Seven tools cover list, get, create, patch, history, restore and export. Updates require an expected revision and mutation ID. Concurrent stale writes fail explicitly; identical retries recover the committed result. Agents should read, patch stable IDs, and reconcile conflicts.
 
-## Kalıcılık ve taşınabilirlik
+[Agent integration and tool examples](docs/agent-integration.md)
 
-Veri `.mefagram/db` altında diske yazılır; tarayıcı deposu kanonik kayıt değildir. Yenileme, yeni tarayıcı oturumu ve sunucu yeniden başlatma test edilmiştir. Yerel PGlite dizinini aynı anda **tek Node süreci** açmalıdır. Tam yedek için sunucuyu durdurup `.mefagram` ve `.env.local` dosyalarını özel bir yedek konumuna kopyala. JSON dışa/içe aktarma, içerik taşır; hesap, anahtarlar ve bütün sürüm geçmişini taşımaz.
+## Local or hosted
 
-[JSON şeması](docs/diagram-export.schema.json) düğümleri, bağlantıları, üst düğümleri, koordinatları, notları ve kaynakları korur. İçe aktarma yeni bir diyagram oluşturur. Sınırlar: diyagram içeriği başına 2 MB (JSON dosya aktarımı en fazla 8 MB), 2.000 düğüm, 6.000 bağlantı; hiyerarşi en fazla 12 seviye. Bunlar performans garantisi değildir; tarayıcıda doğrulanan büyük örnek 150 düğümdür. Büyük haritaları aşamalara ayırmak okumayı kolaylaştırır.
+Local data persists on disk in `.mefagram/db` using PGlite. Viewing and editing work offline after dependencies are installed; remote AI services still need their own network access. A cloud agent cannot reach your Mac's loopback address.
 
-## Yerel ve bulut kullanım
+For agents on different computers, use **one reachable private installation** with a stable HTTPS origin and durable storage. A persistent single-process host can use PGlite; serverless/multiple app instances require external Postgres through `DATABASE_URL`. Vercel and Netlify reject database initialization without it. Other stateless hosts should set `MEFAGRAM_REQUIRE_DATABASE_URL=true`.
 
-Mac’teki uygulama, bağımlılıklar kurulduktan sonra internet olmadan açılabilir. Bulut AI asistanı internetsiz çalışmaz. Dot’un bu Mac’teki kuruluma erişmesi Mac’in ve sunucunun açık, bağlantının erişilebilir olmasına bağlıdır. Ayrı bilgisayara repo kurmak, eski veritabanını kendiliğinden eşitlemez.
+The software has no license or AI API fee. Hosted providers have their own prices, free quotas and eligibility rules; unlimited free hosting is not promised. Running a copy in an agent's cloud computer is possible when its runtime and network support it, but stable external access and backups must be arranged explicitly.
 
-Sürekli erişim için uygulama erişilebilir bir sunucuda ve ortak Postgres ile çalıştırılabilir. Vercel’de `DATABASE_URL` zorunludur; dosya sistemine sessizce kayıt yapılmaz. [Dağıtım rehberi](docs/deployment.md) kurulum yolunu ve ücretsiz plan koşullarını açıklar. **Bu teslimde Vercel/Neon dağıtımı ve gerçek Dot bağlantısı tamamlanmış değildir.**
+[Deployment and shared endpoint setup](docs/deployment.md)
 
-## Doğrulama
+## Own and move your data
+
+No public signup or telemetry service is configured by Mefagram. Each instance is a single-owner private workspace, not a multi-user SaaS. OAuth 2.1/PKCE and scoped, expiring personal tokens protect MCP access. Browser-issued tokens can be revoked immediately; issued OAuth access JWTs have a maximum five-minute remaining lifetime.
+
+Back up the entire stopped local database and auth configuration for full recovery. [JSON export](docs/diagram-export.schema.json) preserves current diagram content, including hierarchy, notes, sources and position overrides; it does not transfer accounts, credentials or full history.
+
+Current limits: 2 MB canonical content, 8 MB transfer envelope, 2,000 nodes, 6,000 edges and 12 hierarchy levels. These are validation limits, not a performance guarantee; the browser suite includes a 150-node map.
+
+## Develop and contribute
 
 ```sh
 npm run typecheck
 npm run lint
 npm test
-npx playwright install chromium
-npm run test:e2e
 npm run build
-npm run verify:bundle
+npx playwright install chromium
+MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e
 ```
 
-Tarayıcı testleri ayrı, silinip yeniden oluşturulabilen `.mefagram/e2e-*` verisi kullanır. Ana veritabanına dokunmaz. Test sunucusunu çalıştırırken başka `next dev/start` süreci kapalı olmalı. [Doğrulama kaydı](docs/verification.md) çalışanlarla henüz doğrulanmayanları ayrı listeler.
+The build checks that private data and credentials are absent from traced deployment files. Browser tests use disposable fixtures, not your workspace. CI also tests native Postgres. [Verification evidence and limits](docs/verification.md) distinguishes localhost tests from actual remote-client acceptance.
+
+Contributions are welcome: [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately using [SECURITY.md](SECURITY.md). [MIT license](LICENSE); bundled dependencies retain their own [licenses](NOTICE.md).

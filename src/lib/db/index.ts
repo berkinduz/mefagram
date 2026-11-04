@@ -116,9 +116,14 @@ const globalDatabase = globalThis as typeof globalThis & {
 };
 export function getDatabase() {
   if (!globalDatabase.mefagramDatabase) {
-    if (process.env.VERCEL && !process.env.DATABASE_URL)
+    if (
+      (process.env.VERCEL ||
+        process.env.NETLIFY ||
+        process.env.MEFAGRAM_REQUIRE_DATABASE_URL === "true") &&
+      !process.env.DATABASE_URL
+    )
       throw new Error(
-        "Hosted deployments require DATABASE_URL. Local database storage is disabled on Vercel.",
+        "Hosted deployments require DATABASE_URL. Local database storage is disabled on serverless hosts.",
       );
     globalDatabase.mefagramDatabase = createDatabase({
       databaseUrl: process.env.DATABASE_URL,

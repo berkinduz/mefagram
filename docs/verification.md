@@ -1,73 +1,47 @@
-# Verification record — 2026-11-04
+# Verification record — v0.1.0
 
-This records observed behaviour, not a completion claim based on screenshots. Application source is on `codex/mefagram-mvp`. Personal credentials, DBs and raw local evidence remain gitignored under `.mefagram`.
+Evidence is recorded separately for the application, its portable installer and a particular hosted deployment. Fixtures are synthetic. Private databases, credentials and raw local reports are excluded from Git and deployment bundles.
 
-## Confirmed locally
+## Automated application checks
 
-| Area                     | Evidence                                                                             | Result                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Data service             | `npm test`: 13 diagram tests, real PGlite transactions                               | Create/read/update, filesystem close/reopen, ownership isolation, atomic rollback, exactly one concurrent winner, stale revision rejection, idempotent retries, preserved omitted fields, hierarchy/source validation, export/import/restore pass                                                                                                                                          |
-| Account/token security   | 4 auth tests + 4 HTTP API tests                                                      | Private bootstrap, no public signup, hashed scoped expiring tokens, immediate PAT revocation, ownership, authenticated API round-trip and CSRF origin checks pass                                                                                                                                                                                                                          |
-| OAuth                    | 1 real HTTP-server OAuth test                                                        | Discovery, dynamic client registration, owner login/consent, authorization code, PKCE exchange and resource-bound token verification pass                                                                                                                                                                                                                                                  |
-| MCP                      | 2 SDK-client tests and real Next HTTP/browser acceptance                             | Tool discovery, create/update/read, shared DB, write-scope rejection and stale revision errors pass                                                                                                                                                                                                                                                                                        |
-| Graph/layout             | 8 graph tests                                                                        | Hierarchy projection, internal edge aggregation, true self loops, Turkish search, focus neighbours, non-overlap, exact visible handle endpoints and wrapped linear layout pass                                                                                                                                                                                                             |
-| Browser                  | 12 Playwright desktop Chromium flows, 1512×982                                       | Reader/drill-down; keyboard selection and saved arrow move; create/edit/reload + independent context; unauthenticated rejection; real HTTP MCP writes read/exported in UI; lost-response reconciliation; creation retry without duplicates; readable 150-node hierarchy/list; delayed refresh/save/revision ordering; near-limit downloaded-file reimport; rejected sign-out handling pass |
-| Production compile       | `npm run build`                                                                      | Next.js optimized build succeeds                                                                                                                                                                                                                                                                                                                                                           |
-| Bundle privacy           | `npm run verify:bundle`                                                              | 14 trace manifests contain no `.mefagram`, `.env*`, `.superpowers` or test-report files                                                                                                                                                                                                                                                                                                    |
-| Process restart          | `verify:integration before-restart`, actual process stop/start, then `after-restart` | Production MCP created revision 1, patched revision 2; restarted server returned the same revision/note; fresh Chromium session read it from the UI without uncaught application errors                                                                                                                                                                                                    |
-| Agent CLI                | `npm run agent -- list`, `--help`, integration script                                | Real authenticated HTTP MCP used; no direct live DB access or UI automation required for agent edits                                                                                                                                                                                                                                                                                       |
-| Runtime dependency audit | `npm audit --omit=dev`                                                               | 0 reported production vulnerabilities at verification time                                                                                                                                                                                                                                                                                                                                 |
+| Check | Observed coverage |
+| --- | --- |
+| TypeScript and ESLint | Type checking and lint pass |
+| Local tests | 43 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
+| Native Postgres | Separate integration suite covers real auth/login/token, ownership, concurrent writes/history, reopen and JSON round-trip; CI supplies an isolated PostgreSQL service |
+| MCP | Official SDK clients exercise tool discovery, create/read/update, scope checks, stale writes and two independent clients sharing canonical state |
+| OAuth | Real HTTP authorization flow: discovery, dynamic registration, login/consent, PKCE exchange and resource-bound access token |
+| Installer | Real CLI processes test empty defaults, identity/storage configuration, repeated setup, edited sample/history preservation, mismatch rejection, blank secrets, options and Next-compatible environment escaping |
+| Storage guards | Vercel, Netlify and explicit stateless mode reject silent local database fallback |
+| Browser | 12 production Chromium flows cover reading/drill/list, keyboard interaction, saved edits/reload, independent sessions, real MCP-to-UI writes, retries, async ordering, near-limit JSON round-trip and rejected sign-out |
+| Production build | Optimized Next.js build and automatic privacy check pass; 14 trace manifests exclude private workspace/configuration/test files |
 
-`npm test` currently has **32 passing tests in 6 files**. All 12 browser flows passed against the optimized `next start` production server (10.0 seconds for the final regression run). The original seven also passed against development. A different browser context is not a claim that a second physical device was tested. iPhone is explicitly outside this version's scope.
+Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, then `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e` (install Chromium first). One browser suite at a time: it uses reserved disposable `.mefagram/e2e-*` paths and port 3100. The ordinary workspace database is not used.
 
-## Reproduce production persistence
+CI runs the same checks on Linux/Node 24 with a dedicated PostgreSQL service. The optional native integration test creates and drops only its own random schema. Use a disposable test database, never a personal production database, for `TEST_DATABASE_URL`.
 
-Start `npm start` using the generated local workspace. In another terminal:
+## Portable installation acceptance
 
-```sh
-npm run verify:integration -- before-restart
-```
+`npm run verify:installation` is an opt-in, real-clone acceptance command. It creates private temporary clones and logs under the OS temporary directory; it does not open the current workspace database or read its credentials. It needs Git, npm, Chromium and a free localhost port (default 3290, configurable through `MEFAGRAM_VERIFY_PORT`).
 
-Stop the Node server, run `npm start` again, then:
+Its assertions cover:
 
-```sh
-npm run verify:integration -- after-restart
-```
+1. Clone committed source, run `npm ci`, create an empty workspace and compile production.
+2. Two independent HTTP MCP clients read the same diagram; concurrent writes have exactly one winner and one revision conflict.
+3. A fresh production browser signs in and displays the saved note.
+4. Stop/restart the actual server, then reread the saved revision through MCP and another browser session.
+5. Copy a stopped full database/configuration backup, move the original aside, restore the copy, and verify the original agent credential and browser login against the restored production server.
+6. Clone previous commit `e557bab`, bootstrap and customize its sample, switch to the candidate commit, run `npm ci` and setup again, then compare owner, login, token, secret hashes, diagram content and complete revision metadata.
 
-The script asserts the saved ID/revision/content through real MCP and a fresh browser. It archives its verification map afterward. Local machine-readable result: `.mefagram/evidence/production-result.json`; screenshot: `.mefagram/evidence/production-mcp-readback.png`. These contain synthetic test content, not a real Mefa Apps project.
+The command writes `result.json`, `commands.log` and synthetic screenshots in its printed private evidence directory. These are local evidence, not release assets. Acceptance results and the CI run are finalized before tagging the release.
 
-For the full production browser suite, build first and run `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e`. It provisions a separate disposable fixture DB on port 3100. Do not run multiple test invocations together. The main `.mefagram/db` remains intact.
+## Practical limits
 
-## Visual inspection
-
-Overview and node-detail screenshots were inspected. Text size/contrast were increased; the selected node now stays inside the resized canvas when the inspector opens. Seven phases wrap across rows. Large phases start at a readable zoom instead of shrinking their labels to fit every node. Branched layouts use the actual ELK web worker; straight processes use deterministic wrapped routing. Normal long notes/source content stays in the inspector and list view.
-
-The 150-node browser fixture has six phases and 24 child steps per phase. It demonstrates overview/drill/list navigation, not a performance guarantee for every 2,000-node/6,000-edge graph. Layout is automatic and heuristic; dense arbitrary cross-links may still need better hierarchy, filtering or manual placement.
-
-## Not completed or not verified
-
-- **Vercel/Neon deployment:** the connector's integration-list call returned 403. The CLI fallback later authenticated and listed the existing Neon Free installation; a team read confirmed Hobby. No new resource, deployment, paid plan or trial was activated. The local option was explicitly allowed by the user; commercial Hobby eligibility is not assumed.
-- **Hosted Postgres path:** implemented via `pg` with transactional migrations, but no external Postgres resource was connected/tested. PGlite tests do not prove hosted networking/TLS/pooling behaviour.
-- **Actual Dot invocation / remote OAuth:** not connected or exercised. Local MCP and OAuth protocol tests establish the integration path, not Dot installation, remote ingress or Mac-off access.
-- **Offline viewing:** the app and fonts/ELK assets are local and have no runtime CDN/model requirement, but an OS-level disconnected-network session was not tested. Remote AI agents still require their network service.
-- **Accessibility:** keyboard reading/selection/saved movement, native dialogs, focus styles and list alternative are present; a complete VoiceOver/WCAG audit was not performed.
-- **Export scope:** JSON preserves current diagram content, not accounts or complete revision history; full DB backup is separate.
-- **Synchronization:** independent local installations have independent data unless deliberately connected to a shared hosted database. No automatic Git or offline multi-device synchronization is implemented.
-
-## Implementation decisions
-
-The user authorized starting the discussed implementation, so design/plan records were written without another approval round. The initially empty checkout was reused on a feature branch; there was no existing work requiring a separate worktree. Local persistence uses PGlite and deployment requires explicit hosted Postgres, avoiding an ephemeral production fallback. Hosting and Dot acceptance are kept separate from working local delivery. No source branch was pushed and no private data was published.
-
-## Final review
-
-One fresh-context reviewer examined a4dfce9..ee23771 read-only and independently ran the original 31 tests. No Critical or Minor findings were raised. Three Important findings were reproduced and fixed in one pass:
-
-| Finding                                                              | Reproducing evidence                                                                                                                         | Fix / final result                                                                                                                                                                |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Late responses replaced the active diagram or regressed its revision | Three browser cases failed before the fix: delayed refresh during navigation, delayed save during navigation, earlier revision arriving last | Central acceptance now checks navigation generation, diagram identity and monotonic revision. Stale completions cannot change the selected map or current record. All three pass. |
-| Valid near-limit diagrams failed export/import                       | Near-limit service round-trip and actual downloaded pretty JSON failed before the fix                                                        | Canonical diagram content stays limited to 2 MB; file/transport envelopes allow bounded 8 MB overhead. Oversize semantic content is still rejected. Both tests pass.              |
-| A rejected sign-out appeared to succeed                              | Synthetic HTTP 500 left the session active while navigating to sign-in                                                                       | Failed sign-out explicitly keeps the workspace and an error visible; navigation occurs only after success. A subsequent real sign-out returns API 401. Browser regression passes. |
-
-Final full suite: 32/32 data/auth/API/MCP/OAuth/layout tests and 12/12 production browser tests. The production build and automatic bundle privacy gate pass. Separate production-browser UI checks also confirmed node/edge creation and edge editing, history restore, JSON download/upload, read-only-token write rejection and immediate token revocation; synthetic maps were archived. Local record: `.mefagram/evidence/ui-crud-result.json`.
-
-Review rulings: hosted Postgres/ingress/Dot remain explicitly unverified within accepted local delivery (cost: remote Mac-off access is not delivered); already-issued OAuth JWTs may remain usable until their five-minute expiry after revocation, while personal tokens revoke immediately (cost: bounded residual OAuth access); full accessibility and OS-level disconnected operation are not guaranteed (cost: those environments may expose issues beyond tested keyboard/list/local assets). No deferred Minor findings.
+- This release does not provision a hosted instance or certify a particular provider's networking, TLS, pooling, quotas or free-plan eligibility. Native Postgres CI verifies the database implementation, not a hosted account.
+- Actual Dot authorization/invocation and Mac-off access require a real reachable private endpoint and client setup; they are not claimed from localhost tests.
+- Local acceptance is on macOS with Node 24; CI covers Linux. Windows installation is not independently verified.
+- A second browser session is not a test on a second physical device. iPhone support is outside the initial scope.
+- Keyboard selection/movement, focus states and list alternatives are tested; a full VoiceOver/WCAG audit has not been performed.
+- Layout is heuristic. The browser suite includes a 150-node hierarchical fixture; the 2,000-node/6,000-edge validation limits are not performance guarantees for arbitrary dense graphs.
+- The app serves fonts/layout assets locally and has no model/CDN requirement, but an OS-level disconnected-network session has not been tested. Remote AI calls require their own network access.
+- JSON transfers current content. Full account/token/history recovery requires a database backup with matching auth configuration. Independent installations do not automatically synchronize data.

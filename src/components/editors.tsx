@@ -121,7 +121,7 @@ export function DiagramEditor({
             required
             maxLength={160}
             autoFocus
-            placeholder="Örneğin: Mefa Apps çalışma haritası"
+            placeholder="Örneğin: Ürün geliştirme süreci"
           />
         </label>
         <label>

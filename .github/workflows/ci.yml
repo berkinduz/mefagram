@@ -1,0 +1,42 @@
+name: CI
+on:
+  push:
+    branches: [main, codex/portable-setup]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: mefagram_test
+          POSTGRES_PASSWORD: disposable_test_password
+          POSTGRES_DB: mefagram_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U mefagram_test -d mefagram_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      TEST_DATABASE_URL: postgresql://mefagram_test:disposable_test_password@127.0.0.1:5432/mefagram_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          MEFAGRAM_TEST_PRODUCTION: "1"
