@@ -12,4 +12,8 @@ playwright-report/
 test-results/
 *.log
 .DS_Store
+public/elk-worker.min.js
+public/elk-license.txt
 
+next-env.d.ts
+*.tsbuildinfo

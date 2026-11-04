@@ -1,6 +1,6 @@
-import { getDatabase } from '@/lib/db';
-import { getAuth } from '@/lib/auth/server';
-import { authConfig } from '@/lib/auth/config';
+import { getDatabase } from "@/lib/db";
+import { getAuth } from "@/lib/auth/server";
+import { authConfig } from "@/lib/auth/config";
 
 export async function getRuntime() {
   const { baseURL } = authConfig();

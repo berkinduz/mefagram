@@ -40,4 +40,3 @@ CREATE TABLE IF NOT EXISTS personal_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 `;
-
