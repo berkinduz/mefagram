@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { diagramMigration } from './migrate';
+import { authMigration } from './auth-migration';
 
 export interface SqlExecutor {
   query<T extends Record<string, unknown> = Record<string, unknown>>(sql: string, parameters?: unknown[]): Promise<{ rows: T[] }>;
@@ -39,8 +40,21 @@ export async function createDatabase(options: { dataDir?: string; databaseUrl?: 
     };
   }
   try {
-    // DDL contains no user input. Queries at the service boundary are parameterized.
-    for (const statement of diagramMigration.split(';').filter(value => value.trim())) await database.query(statement);
+    await database.transaction(async transaction => {
+      // Serialise cold-start migrations across hosted Function instances.
+      if (database.mode === 'hosted') await transaction.query('SELECT pg_advisory_xact_lock(738401124)');
+      await transaction.query('CREATE TABLE IF NOT EXISTS mefagram_migrations (id TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())');
+      const applied = await transaction.query('SELECT id FROM mefagram_migrations');
+      const ids = new Set(applied.rows.map(row => row.id));
+      if (!ids.has('auth-v1')) {
+        for (const statement of authMigration.split('--> statement-breakpoint').filter(value => value.trim())) await transaction.query(statement);
+        await transaction.query('INSERT INTO mefagram_migrations (id) VALUES ($1)', ['auth-v1']);
+      }
+      if (!ids.has('diagrams-v1')) {
+        for (const statement of diagramMigration.split(';').filter(value => value.trim())) await transaction.query(statement);
+        await transaction.query('INSERT INTO mefagram_migrations (id) VALUES ($1)', ['diagrams-v1']);
+      }
+    });
   } catch (error) { await database.close(); throw error; }
   return database;
 }
