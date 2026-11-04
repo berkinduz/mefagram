@@ -91,6 +91,13 @@ const config = {
   ...(!testMode && setting("DATABASE_URL")
     ? { DATABASE_URL: setting("DATABASE_URL")! }
     : {}),
+  ...(setting("MEFAGRAM_REQUIRE_DATABASE_URL")
+    ? {
+        MEFAGRAM_REQUIRE_DATABASE_URL: setting(
+          "MEFAGRAM_REQUIRE_DATABASE_URL",
+        )!,
+      }
+    : {}),
 };
 const baseURL = new URL(config.BETTER_AUTH_URL);
 if (

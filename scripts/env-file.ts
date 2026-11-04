@@ -2,14 +2,14 @@ import nextEnv from "@next/env";
 
 // Setup and Next must interpret the same escaping and variable expansion.
 export function readEnvironment(contents: string, path: string) {
-  const [, parsed] = nextEnv.processEnv(
-    [{ path, contents, env: {} }],
-    process.cwd(),
-    undefined,
-    true,
-  );
+  const file = {
+    path,
+    contents,
+    env: {} as Record<string, string | undefined>,
+  };
+  nextEnv.processEnv([file], process.cwd(), undefined, true);
   return Object.fromEntries(
-    Object.entries(parsed ?? {}).filter(
+    Object.entries(file.env).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );

@@ -11,6 +11,8 @@ Deploy one private installation per owner. The browser and all of that owner's a
 
 Vercel and Netlify reject database initialization without `DATABASE_URL`. Set `MEFAGRAM_REQUIRE_DATABASE_URL=true` on other stateless platforms to enforce the same rule. An agent's temporary checkout or an ephemeral host filesystem must not become the only copy of your diagrams.
 
+Use a dedicated Postgres database with its default `public` schema. Custom `search_path` schemas are not supported; the generated auth migration references `public` explicitly.
+
 Node.js 24+ is required. `npm start` binds to loopback by default. A container or platform requiring a public listener can run `npm start -- --hostname 0.0.0.0 --port <port>`, behind its HTTPS proxy. The configured public origin must match the URL people and agents actually use.
 
 ## Bootstrap a hosted installation

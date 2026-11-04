@@ -33,6 +33,7 @@ for (const key of Object.keys(env))
     delete env[key];
 const port = Number(process.env.MEFAGRAM_VERIFY_PORT ?? 3290);
 const baseURL = `http://127.0.0.1:${port}`;
+const externalDataDir = join(evidence, "external-data");
 let server: ChildProcess | undefined;
 
 async function run(
@@ -238,7 +239,7 @@ try {
       "--email",
       "fixture@example.com",
     ],
-    { BETTER_AUTH_URL: baseURL },
+    { BETTER_AUTH_URL: baseURL, MEFAGRAM_DATA_DIR: externalDataDir },
   );
   await run(fresh, "npm", ["run", "build"]);
   await start(fresh);
@@ -316,6 +317,7 @@ try {
     recursive: true,
   });
   await cp(join(fresh, ".env.local"), join(evidence, "backup.env"));
+  await cp(externalDataDir, join(evidence, "backup-db"), { recursive: true });
   await rename(
     join(fresh, ".mefagram"),
     join(fresh, ".mefagram-before-restore"),
@@ -324,6 +326,8 @@ try {
     recursive: true,
   });
   await cp(join(evidence, "backup.env"), join(fresh, ".env.local"));
+  await rename(externalDataDir, `${externalDataDir}-before-restore`);
+  await cp(join(evidence, "backup-db"), externalDataDir, { recursive: true });
   await start(fresh);
   const restored = await client(fresh);
   try {
@@ -378,6 +382,7 @@ try {
         productionBrowser: true,
         processRestart: true,
         backupRestore: true,
+        customDataDirectoryBackupRestore: true,
         upgradePreservation: true,
       },
       null,

@@ -7,21 +7,22 @@ import { createAuth } from "@/lib/auth/server";
 import { PersonalTokenService } from "@/lib/auth/tokens";
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)(
-  "native Postgres integration (isolated test schema)",
+  "native Postgres integration (isolated test database)",
   () => {
     let admin: Pool;
     let db: Database;
     let connectionString: string;
     let ownerId: string;
-    const schema = `mefagram_test_${randomUUID().replaceAll("-", "")}`;
+    const database = `mefagram_test_${randomUUID().replaceAll("-", "")}`;
     beforeAll(async () => {
       admin = new Pool({
         connectionString: process.env.TEST_DATABASE_URL,
         connectionTimeoutMillis: 5000,
       });
-      await admin.query(`CREATE SCHEMA "${schema}"`);
+      await admin.query(`CREATE DATABASE "${database}"`);
       const url = new URL(process.env.TEST_DATABASE_URL!);
-      url.searchParams.set("options", `-c search_path=${schema}`);
+      url.pathname = `/${database}`;
+      url.searchParams.set("options", "-c search_path=public");
       connectionString = url.toString();
       db = await createDatabase({ databaseUrl: connectionString });
     });
@@ -29,7 +30,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       await db?.close();
       if (admin) {
         try {
-          await admin.query(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`);
+          await admin.query(
+            `DROP DATABASE IF EXISTS "${database}" WITH (FORCE)`,
+          );
         } finally {
           await admin.end();
         }

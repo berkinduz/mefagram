@@ -17,7 +17,7 @@ The interface currently uses Turkish copy; the README and developer documentatio
 5. For UI, persistence or HTTP changes, install Chromium with `npx playwright install chromium`, then run `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e`. On Windows, set that environment variable using your shell's syntax. Run one browser-test invocation at a time.
 6. Describe the problem, resulting behaviour, validation and any limits in the pull request. Keep unrelated formatting/refactors separate.
 
-CI uses an ephemeral PostgreSQL service and standard Ubuntu runners. `TEST_DATABASE_URL` enables the native PostgreSQL tests; they create and remove a uniquely named test schema. Never point test configuration at a personal or production database. Without this variable, the three native-PostgreSQL cases are skipped; persistent PGlite tests still run.
+CI uses an ephemeral PostgreSQL service and standard Ubuntu runners. `TEST_DATABASE_URL` enables the native PostgreSQL tests; they create and remove a uniquely named test database, so the disposable test role needs `CREATEDB` permission. The app uses the database's default `public` schema, including its generated auth foreign keys. Never point test configuration at a personal or production database/server. Without this variable, the three native-PostgreSQL cases are skipped; persistent PGlite tests still run.
 
 Browser tests reserve `.mefagram/e2e-*` for disposable data. Keep `.mefagram`, `.env.local`, credentials, access tokens, personal diagram exports and test reports out of Git. Use synthetic examples in issues, screenshots and test fixtures. Never run setup against a local PGlite database already open in another process.
 

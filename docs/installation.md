@@ -39,7 +39,9 @@ Repeat setup preserves existing owner identity, secrets and credentials; it does
 
 ## Backup and restore
 
-For local PGlite, stop the app and copy the **entire** `.mefagram` directory plus `.env.local` to a private backup location. Preserve permissions. To restore, stop the app, move the current data/configuration aside, restore those saved files at the same relative paths, and start the matching release. Update `MEFAGRAM_DATA_DIR` deliberately if using an absolute location. Never overlay or copy an open PGlite database.
+For local PGlite, stop the app and back up all three of these: the **complete resolved `MEFAGRAM_DATA_DIR`**, the `.mefagram` directory containing credentials, and `.env.local`. Resolve a relative data path from the installation directory. The default `.mefagram/db` is already inside `.mefagram`; a custom path such as `/srv/mefagram-data` is separate and **must also be copied**. Backing up only the checkout would omit that external database and its entire history. Preserve permissions and keep the backup private.
+
+To restore, stop the app, move the current data/configuration aside, and restore the credential directory, `.env.local`, and the entire database directory. Restore an external database to its configured absolute path, or deliberately update `MEFAGRAM_DATA_DIR` to the new restored location. Start the matching release only after all three are in place. Never overlay or copy an open PGlite database.
 
 For hosted Postgres, use database/provider backup and restore tools, and preserve the app's auth configuration separately. Browser JSON export/import transfers the current diagram's nodes, links, hierarchy, notes, sources and positions. It creates a new diagram and does not transfer accounts, tokens or complete revision history.
 

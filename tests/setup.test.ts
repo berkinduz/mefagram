@@ -286,4 +286,34 @@ describe("portable setup through the real CLI", () => {
     expect(JSON.parse(output.join("").trim())).toEqual({ name, dataDir });
     expect(await setup(cwd)).toMatchObject({ code: 0 });
   });
+
+  test("preserves saved settings also supplied by the shell and persists the stateless guard", async () => {
+    const cwd = await directory();
+    await writeFile(
+      join(cwd, ".env.local"),
+      "CUSTOM_SETTING=saved-value\nMEFAGRAM_REQUIRE_DATABASE_URL=true\n",
+    );
+    expect(
+      await setup(cwd, [], {
+        CUSTOM_SETTING: "shell-value",
+        MEFAGRAM_REQUIRE_DATABASE_URL: "true",
+      }),
+    ).toMatchObject({ code: 0 });
+    expect((await saved(cwd)).config).toMatchObject({
+      CUSTOM_SETTING: "shell-value",
+      MEFAGRAM_REQUIRE_DATABASE_URL: "true",
+    });
+    expect(await setup(cwd)).toMatchObject({ code: 0 });
+    expect((await saved(cwd)).config).toMatchObject({
+      CUSTOM_SETTING: "shell-value",
+      MEFAGRAM_REQUIRE_DATABASE_URL: "true",
+    });
+    const envOnly = await directory();
+    expect(
+      await setup(envOnly, [], { MEFAGRAM_REQUIRE_DATABASE_URL: "true" }),
+    ).toMatchObject({ code: 0 });
+    expect((await saved(envOnly)).config.MEFAGRAM_REQUIRE_DATABASE_URL).toBe(
+      "true",
+    );
+  });
 });

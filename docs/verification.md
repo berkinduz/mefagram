@@ -7,7 +7,7 @@ Evidence is recorded separately for the application, its portable installer and 
 | Check | Observed coverage |
 | --- | --- |
 | TypeScript and ESLint | Type checking and lint pass |
-| Local tests | 43 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
+| Local tests | 44 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
 | Native Postgres | Separate integration suite covers real auth/login/token, ownership, concurrent writes/history, reopen and JSON round-trip; CI supplies an isolated PostgreSQL service |
 | MCP | Official SDK clients exercise tool discovery, create/read/update, scope checks, stale writes and two independent clients sharing canonical state |
 | OAuth | Real HTTP authorization flow: discovery, dynamic registration, login/consent, PKCE exchange and resource-bound access token |
@@ -18,7 +18,7 @@ Evidence is recorded separately for the application, its portable installer and 
 
 Run `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, then `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e` (install Chromium first). One browser suite at a time: it uses reserved disposable `.mefagram/e2e-*` paths and port 3100. The ordinary workspace database is not used.
 
-CI runs the same checks on Linux/Node 24 with a dedicated PostgreSQL service. The optional native integration test creates and drops only its own random schema. Use a disposable test database, never a personal production database, for `TEST_DATABASE_URL`.
+CI runs the same checks on Linux/Node 24 with a dedicated PostgreSQL service. The optional native integration test creates and drops only its own random database; the disposable role requires `CREATEDB`. Use a disposable test server, never personal production, for `TEST_DATABASE_URL`.
 
 ## Portable installation acceptance
 
@@ -30,10 +30,10 @@ Its assertions cover:
 2. Two independent HTTP MCP clients read the same diagram; concurrent writes have exactly one winner and one revision conflict.
 3. A fresh production browser signs in and displays the saved note.
 4. Stop/restart the actual server, then reread the saved revision through MCP and another browser session.
-5. Copy a stopped full database/configuration backup, move the original aside, restore the copy, and verify the original agent credential and browser login against the restored production server.
+5. Use a custom absolute database directory outside the checkout; back up that entire stopped directory together with credentials/configuration, move the originals aside, restore the copies, and verify the original agent credential and browser login against the restored production server.
 6. Clone previous commit `e557bab`, bootstrap and customize its sample, switch to the candidate commit, run `npm ci` and setup again, then compare owner, login, token, secret hashes, diagram content and complete revision metadata.
 
-The command writes `result.json`, `commands.log` and synthetic screenshots in its printed private evidence directory. These are local evidence, not release assets. Acceptance results and the CI run are finalized before tagging the release.
+The command writes `result.json`, `commands.log` and synthetic screenshots in its printed private evidence directory. These are local evidence, not release assets. The first acceptance passed for commit `4dd6bcb`, including default-directory backup restoration and the actual previous-version upgrade. The release candidate also repeats it with an external custom database directory. The final acceptance and CI run are recorded before tagging.
 
 ## Practical limits
 
