@@ -53,8 +53,8 @@
 **Files:** reproducible acceptance script and `docs/verification.md`.
 **Interfaces:** Real Git clones, real setup CLI, real persistent DB, production server, authenticated MCP and fresh browser sessions.
 
-- [ ] Verify a clean clone: `npm ci`, empty setup, production build, login, MCP create/update, restart and read-back.
-- [ ] Bootstrap previous commit `e557bab`, save edited fixture/history, upgrade to this branch, rerun setup, verify preserved owner/credentials/records/history.
-- [ ] Restore a stopped local backup and read it with the production app; verify the restored MCP credential and browser login.
-- [ ] Record precise evidence and limits, obtain one independent release review, and fix Important findings with reproducing tests.
-- [ ] Publish the verified common source to GitHub, check CI, then create v0.1.0 with honest release notes. Do not start our personal installation in this task.
+- [x] Verify a clean clone: `npm ci`, empty setup, production build, login, MCP create/update, restart and read-back.
+- [x] Bootstrap previous commit `e557bab`, save edited fixture/history, upgrade to this branch, rerun setup, verify preserved owner/credentials/records/history.
+- [x] Restore a stopped local backup and read it with the production app; verify the restored MCP credential and browser login.
+- [x] Record precise evidence and limits, obtain one independent release review, and fix Important findings with reproducing tests.
+- [x] Publish the verified common source to GitHub and check CI. Release publication follows this gate: promote the verified source to main and create v0.1.0 with honest release notes. Do not start a personal installation in this task.
