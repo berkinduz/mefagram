@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Database, SqlExecutor } from "@/lib/db";
 import { DiagramError } from "./errors";
+import { MAX_TRANSFER_BYTES } from "./limits";
 import { applyPatch, operationsSchema } from "./patch";
 import { DiagramRepository, recordContent } from "./repository";
 import {
@@ -180,7 +181,7 @@ export class DiagramService {
   }
 
   async import(ownerId: string, input: unknown, mutationId: string) {
-    const content = validated(exportSchema, input);
+    const content = validated(exportSchema, input, MAX_TRANSFER_BYTES);
     return this.create(ownerId, content.diagram, mutationId);
   }
 

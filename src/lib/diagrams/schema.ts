@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DiagramError } from "./errors";
+import { MAX_DIAGRAM_BYTES } from "./limits";
 
 export const idSchema = z
   .string()
@@ -184,6 +185,7 @@ export interface DiagramRevision {
 export function validated<T extends z.ZodType>(
   schema: T,
   input: unknown,
+  maximumBytes = MAX_DIAGRAM_BYTES,
 ): z.output<T> {
   const parsed = schema.safeParse(input);
   if (!parsed.success)
@@ -191,7 +193,9 @@ export function validated<T extends z.ZodType>(
       "VALIDATION_ERROR",
       parsed.error.issues.map((issue) => issue.message).join(" "),
     );
-  if (new TextEncoder().encode(JSON.stringify(parsed.data)).length > 2_000_000)
+  if (
+    new TextEncoder().encode(JSON.stringify(parsed.data)).length > maximumBytes
+  )
     throw new DiagramError(
       "VALIDATION_ERROR",
       "Diyagram 2 MB sınırını aşıyor.",

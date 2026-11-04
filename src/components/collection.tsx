@@ -14,6 +14,7 @@ import {
 import type { DiagramSummary } from "@/lib/diagrams/schema";
 import { Brand } from "./brand";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export function Collection({
   diagrams,
@@ -43,6 +44,8 @@ export function Collection({
   userName: string;
 }) {
   const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   return (
     <aside className="collection" aria-label="Çalışma alanı">
       <div className="collection-brand">
@@ -140,6 +143,11 @@ export function Collection({
         )}
       </nav>
       <div className="collection-footer">
+        {signOutError && (
+          <p className="form-error" role="alert">
+            {signOutError}
+          </p>
+        )}
         <button onClick={onImport}>
           <Import size={16} />
           Diyagramı içe aktar
@@ -149,14 +157,25 @@ export function Collection({
           Agent bağlantıları
         </button>
         <button
+          disabled={signingOut}
           onClick={async () => {
-            await fetch("/api/auth/sign-out", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: "{}",
-            });
-            router.replace("/sign-in");
-            router.refresh();
+            setSigningOut(true);
+            setSignOutError("");
+            try {
+              const response = await fetch("/api/auth/sign-out", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: "{}",
+              });
+              if (!response.ok) throw new Error("Sign-out was rejected.");
+              router.replace("/sign-in");
+              router.refresh();
+            } catch {
+              setSignOutError(
+                "Oturum kapatılamadı. Oturumun hâlâ açık; yeniden deneyebilirsin.",
+              );
+              setSigningOut(false);
+            }
           }}
         >
           <LogOut size={16} />

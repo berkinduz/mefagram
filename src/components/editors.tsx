@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { Dialog } from "./dialog";
 import { ApiError } from "@/lib/http/client";
+import { MAX_TRANSFER_BYTES } from "@/lib/diagrams/limits";
 import type {
   DiagramRecord,
   DiagramNode,
@@ -638,9 +639,9 @@ export function ImportDialog({
           setBusy(true);
           setError("");
           try {
-            if (file.size > 2_000_000)
+            if (file.size > MAX_TRANSFER_BYTES)
               throw new ApiError(
-                "Dosya 2 MB sınırını aşıyor.",
+                "Dosya 8 MB aktarım sınırını aşıyor. Diyagram içeriği en fazla 2 MB olabilir.",
                 "VALIDATION_ERROR",
                 400,
               );

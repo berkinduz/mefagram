@@ -75,7 +75,7 @@ Example `update_diagram` arguments:
 }
 ```
 
-Operations: `update_metadata`, `add_node`, `update_node`, `remove_node`, `add_edge`, `update_edge`, `remove_edge`. Node changes accept `parentId: null` to move to root and `position: null` to restore automatic layout. Removing a parent with descendants requires explicit `cascade: true`. Invalid references, duplicate IDs, hierarchy cycles, unsafe URL schemes and oversize requests fail before any part is saved. Flow cycles and real self loops are supported.
+Operations: `update_metadata`, `add_node`, `update_node`, `remove_node`, `add_edge`, `update_edge`, `remove_edge`. Node changes accept `parentId: null` to move to root and `position: null` to restore automatic layout. Removing a parent with descendants requires explicit `cascade: true`. Invalid references, duplicate IDs, hierarchy cycles, unsafe URL schemes and oversize requests fail before any part is saved. Canonical content is limited to 2 MB; bounded transfer envelopes allow 8 MB for pretty JSON/metadata overhead, with content revalidated on import. Flow cycles and real self loops are supported.
 
 ## Diagram design for reading
 

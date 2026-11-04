@@ -45,7 +45,7 @@ MCP adresi: `http://127.0.0.1:3000/api/mcp`. OAuth 2.1/PKCE ve kişisel Bearer a
 
 Veri `.mefagram/db` altında diske yazılır; tarayıcı deposu kanonik kayıt değildir. Yenileme, yeni tarayıcı oturumu ve sunucu yeniden başlatma test edilmiştir. Yerel PGlite dizinini aynı anda **tek Node süreci** açmalıdır. Tam yedek için sunucuyu durdurup `.mefagram` ve `.env.local` dosyalarını özel bir yedek konumuna kopyala. JSON dışa/içe aktarma, içerik taşır; hesap, anahtarlar ve bütün sürüm geçmişini taşımaz.
 
-[JSON şeması](docs/diagram-export.schema.json) düğümleri, bağlantıları, üst düğümleri, koordinatları, notları ve kaynakları korur. İçe aktarma yeni bir diyagram oluşturur. Sınırlar: diyagram başına 2 MB, 2.000 düğüm, 6.000 bağlantı; hiyerarşi en fazla 12 seviye. Bunlar performans garantisi değildir; tarayıcıda doğrulanan büyük örnek 150 düğümdür. Büyük haritaları aşamalara ayırmak okumayı kolaylaştırır.
+[JSON şeması](docs/diagram-export.schema.json) düğümleri, bağlantıları, üst düğümleri, koordinatları, notları ve kaynakları korur. İçe aktarma yeni bir diyagram oluşturur. Sınırlar: diyagram içeriği başına 2 MB (JSON dosya aktarımı en fazla 8 MB), 2.000 düğüm, 6.000 bağlantı; hiyerarşi en fazla 12 seviye. Bunlar performans garantisi değildir; tarayıcıda doğrulanan büyük örnek 150 düğümdür. Büyük haritaları aşamalara ayırmak okumayı kolaylaştırır.
 
 ## Yerel ve bulut kullanım
 

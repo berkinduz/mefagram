@@ -1,4 +1,5 @@
 import { DiagramError } from "@/lib/diagrams/errors";
+import { MAX_TRANSFER_BYTES } from "@/lib/diagrams/limits";
 
 export function json(
   value: unknown,
@@ -35,7 +36,7 @@ export function errorResponse(
 }
 export async function readBody(
   request: Request,
-  maximum = 2_100_000,
+  maximum = MAX_TRANSFER_BYTES,
 ): Promise<Uint8Array> {
   const reader = request.body?.getReader();
   if (!reader)
@@ -51,7 +52,7 @@ export async function readBody(
         await reader.cancel();
         throw new DiagramError(
           "PAYLOAD_TOO_LARGE",
-          "İstek 2 MB sınırını aşıyor.",
+          "İstek aktarım boyutu sınırını aşıyor.",
           413,
         );
       }

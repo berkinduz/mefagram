@@ -92,12 +92,10 @@ export function Workspace({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [menu, setMenu] = useState(false);
   const activeId = useRef(initialRecord?.id);
+  const navigationVersion = useRef(0);
   const savingNow = useRef(false);
   const currentRecord = useRef(record);
   const recordId = record?.id;
-  useEffect(() => {
-    currentRecord.current = record;
-  }, [record]);
   const showError = useCallback(
     (failure: unknown) =>
       setNotice({
@@ -139,25 +137,40 @@ export function Workspace({
     };
   }, [query, archived, showError]);
 
-  const acceptRecord = useCallback((next: DiagramRecord) => {
-    setRecord(next);
-    setSelectedId((value) =>
-      value && next.document.nodes.some((node) => node.id === value)
-        ? value
-        : null,
-    );
-    setScopeId((value) =>
-      value && next.document.nodes.some((node) => node.id === value)
-        ? value
-        : null,
-    );
-    setEdgeIds((value) =>
-      value.filter((id) => next.document.edges.some((edge) => edge.id === id)),
-    );
-  }, []);
+  const acceptRecord = useCallback(
+    (next: DiagramRecord, navigation = navigationVersion.current) => {
+      const current = currentRecord.current;
+      if (
+        navigation !== navigationVersion.current ||
+        next.id !== activeId.current ||
+        (current?.id === next.id && current.revision > next.revision)
+      )
+        return false;
+      currentRecord.current = next;
+      setRecord(next);
+      setSelectedId((value) =>
+        value && next.document.nodes.some((node) => node.id === value)
+          ? value
+          : null,
+      );
+      setScopeId((value) =>
+        value && next.document.nodes.some((node) => node.id === value)
+          ? value
+          : null,
+      );
+      setEdgeIds((value) =>
+        value.filter((id) =>
+          next.document.edges.some((edge) => edge.id === id),
+        ),
+      );
+      return true;
+    },
+    [],
+  );
 
   const openDiagram = useCallback(
     async (id: string) => {
+      const navigation = ++navigationVersion.current;
       activeId.current = id;
       setOpening(true);
       setSelectedId(null);
@@ -168,14 +181,16 @@ export function Workspace({
       setNodeQuery("");
       try {
         const next = await api<DiagramRecord>(`/api/diagrams/${id}`);
-        if (activeId.current === id) {
-          acceptRecord(next);
+        if (acceptRecord(next, navigation)) {
           window.history.replaceState(null, "", `/?diagram=${id}`);
         }
       } catch (failure) {
-        showError(failure);
+        if (navigationVersion.current === navigation) {
+          activeId.current = currentRecord.current?.id;
+          showError(failure);
+        }
       } finally {
-        if (activeId.current === id) setOpening(false);
+        if (navigationVersion.current === navigation) setOpening(false);
       }
     },
     [acceptRecord, showError],
@@ -193,14 +208,15 @@ export function Workspace({
         return;
       running = true;
       const id = activeId.current;
+      const navigation = navigationVersion.current;
       try {
         const next = await api<DiagramRecord>(`/api/diagrams/${id}`);
         if (
           id === activeId.current &&
           next.revision > (currentRecord.current?.revision ?? 0)
         ) {
-          acceptRecord(next);
-          setNotice({ text: "Agentın kaydettiği yeni sürüm açıldı." });
+          if (acceptRecord(next, navigation))
+            setNotice({ text: "Agentın kaydettiği yeni sürüm açıldı." });
           await refreshCollection();
         }
       } catch {
@@ -235,6 +251,9 @@ export function Workspace({
     async (operations: DiagramOperation[], mutationId: string) => {
       const current = currentRecord.current;
       if (!current) throw new Error("Önce bir diyagram aç.");
+      if (current.id !== activeId.current)
+        throw new Error("Diyagram açılıyor. Tamamlanınca yeniden dene.");
+      const navigation = navigationVersion.current;
       if (savingNow.current)
         throw new Error("Önceki kayıt sürüyor. Tamamlanınca yeniden dene.");
       savingNow.current = true;
@@ -245,9 +264,8 @@ export function Workspace({
           body: { expectedRevision: current.revision, operations },
           mutationId,
         });
-        currentRecord.current = next;
-        acceptRecord(next);
-        setNotice({ text: "Değişiklikler kaydedildi." });
+        if (acceptRecord(next, navigation))
+          setNotice({ text: "Değişiklikler kaydedildi." });
         void refreshCollection().catch(() =>
           setNotice({
             text: "Harita kaydedildi. Koleksiyon listesini yenileyebilirsin.",
@@ -260,8 +278,7 @@ export function Workspace({
           failure.code === "REVISION_CONFLICT"
         ) {
           const next = await api<DiagramRecord>(`/api/diagrams/${current.id}`);
-          currentRecord.current = next;
-          acceptRecord(next);
+          acceptRecord(next, navigation);
         }
         throw failure;
       } finally {
@@ -322,7 +339,12 @@ export function Workspace({
     [savePatch, showError],
   );
 
-  async function addRecord(next: DiagramRecord) {
+  async function addRecord(next: DiagramRecord, navigation: number) {
+    if (navigation !== navigationVersion.current) {
+      await refreshCollection().catch(() => {});
+      return;
+    }
+    navigationVersion.current++;
     activeId.current = next.id;
     currentRecord.current = next;
     setRecord(next);
@@ -335,6 +357,19 @@ export function Workspace({
     window.history.replaceState(null, "", `/?diagram=${next.id}`);
     await refreshCollection("", false).catch(() => {});
     setNotice({ text: "Diyagram kaydedildi." });
+  }
+  async function createRecord(
+    path: string,
+    body?: unknown,
+    mutationId?: string,
+  ) {
+    const navigation = navigationVersion.current;
+    const next = await api<DiagramRecord>(path, {
+      method: "POST",
+      body,
+      mutationId,
+    });
+    await addRecord(next, navigation);
   }
   async function exportRecord() {
     if (!record) return;
@@ -371,7 +406,8 @@ export function Workspace({
       record ? projectGraph(record.document, { scopeId, showFeedback }) : null,
     [record, scopeId, showFeedback],
   );
-  const closeModal = () => setModal(null);
+  const closeModal = () =>
+    setModal((current) => (current === modal ? null : current));
   const viewScope = breadcrumbs.at(-1);
 
   return (
@@ -581,12 +617,13 @@ export function Workspace({
                     title="Son kaydı aç"
                     aria-label="Diyagramı yenile"
                     onClick={async () => {
+                      const navigation = navigationVersion.current;
                       try {
                         const next = await api<DiagramRecord>(
                           `/api/diagrams/${record.id}`,
                         );
-                        acceptRecord(next);
-                        setNotice({ text: "Son kaydedilmiş sürüm açıldı." });
+                        if (acceptRecord(next, navigation))
+                          setNotice({ text: "Son kaydedilmiş sürüm açıldı." });
                       } catch (failure) {
                         showError(failure);
                       }
@@ -856,11 +893,7 @@ export function Workspace({
                 className="button"
                 onClick={async () => {
                   try {
-                    const next = await api<DiagramRecord>(
-                      "/api/templates/mefa-apps",
-                      { method: "POST" },
-                    );
-                    await addRecord(next);
+                    await createRecord("/api/templates/mefa-apps");
                   } catch (failure) {
                     showError(failure);
                   }
@@ -892,13 +925,7 @@ export function Workspace({
         <DiagramEditor
           onClose={closeModal}
           onCreate={async (content: DiagramContent, mutationId) =>
-            addRecord(
-              await api<DiagramRecord>("/api/diagrams", {
-                method: "POST",
-                body: content,
-                mutationId,
-              }),
-            )
+            createRecord("/api/diagrams", content, mutationId)
           }
         />
       )}
@@ -932,13 +959,7 @@ export function Workspace({
         <ImportDialog
           onClose={closeModal}
           onImport={async (value, mutationId) =>
-            addRecord(
-              await api<DiagramRecord>("/api/diagrams/import", {
-                method: "POST",
-                body: value,
-                mutationId,
-              }),
-            )
+            createRecord("/api/diagrams/import", value, mutationId)
           }
         />
       )}
@@ -950,6 +971,7 @@ export function Workspace({
           record={record}
           onClose={closeModal}
           onRestore={async (revision) => {
+            const navigation = navigationVersion.current;
             const next = await api<DiagramRecord>(
               `/api/diagrams/${record.id}/restore`,
               {
@@ -957,12 +979,12 @@ export function Workspace({
                 body: { revision, expectedRevision: record.revision },
               },
             );
-            currentRecord.current = next;
-            acceptRecord(next);
+            const displayed = acceptRecord(next, navigation);
             await refreshCollection().catch(() => {});
-            setNotice({
-              text: "Önceki sürüm yeni bir kayıt olarak geri yüklendi.",
-            });
+            if (displayed)
+              setNotice({
+                text: "Önceki sürüm yeni bir kayıt olarak geri yüklendi.",
+              });
           }}
         />
       )}

@@ -52,6 +52,57 @@ describe("persistent diagram operations", () => {
     await db?.close();
   });
 
+  test("round-trips valid content near the limit through compact and formatted export envelopes", async () => {
+    const content = {
+      title: "Synthetic",
+      document: {
+        schemaVersion: 1,
+        nodes: Array.from({ length: 40 }, (_, index) => ({
+          id: `n${index}`,
+          label: "Synthetic",
+          notes: "x".repeat(49898),
+        })),
+        edges: [],
+      },
+    };
+    const saved = await service.create(
+      "boundary-owner",
+      content,
+      "boundary-create",
+    );
+    const exported = await service.export("boundary-owner", saved.id);
+    expect(Buffer.byteLength(JSON.stringify(exported))).toBeGreaterThan(
+      2_000_000,
+    );
+    for (const [index, data] of [
+      JSON.stringify(exported),
+      JSON.stringify(exported, null, 2),
+    ].entries()) {
+      const imported = await service.import(
+        "boundary-owner",
+        JSON.parse(data),
+        `boundary-import-${index}`,
+      );
+      expect(imported.document).toEqual(saved.document);
+    }
+    await expect(
+      service.create(
+        "boundary-owner",
+        {
+          ...content,
+          document: {
+            ...content.document,
+            nodes: content.document.nodes.map((node) => ({
+              ...node,
+              notes: "x".repeat(50000),
+            })),
+          },
+        },
+        "boundary-oversize",
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+  });
+
   test("saves a graph and lets the owner find it by a node description", async () => {
     const saved = await service.create("owner-find", fixture, "create-find");
     expect(saved.revision).toBe(1);
