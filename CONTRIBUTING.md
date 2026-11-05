@@ -4,7 +4,7 @@ Bug reports, documentation, translations, accessibility improvements, layout wor
 
 ## Local development
 
-Use Node.js 24+. Run `npm ci`, `npm run setup`, then `npm run dev`. A fresh installation is empty. Add the proposed sample explicitly with `npm run setup -- --example mefa-apps` while the server is stopped.
+Use Node.js 24+. Run `npm ci`, `npm run setup`, then `npm run dev`. A fresh installation is empty. Add the fictional newsletter sample explicitly with `npm run setup -- --example newsletter` while the server is stopped.
 
 The interface currently uses Turkish copy; the README and developer documentation are in English, with a [Turkish quick start](docs/README.tr.md). Diagrams can contain text in any language. Translation contributions are welcome.
 
@@ -22,6 +22,8 @@ CI uses an ephemeral PostgreSQL service and standard Ubuntu runners. `TEST_DATAB
 Browser tests reserve `.mefagram/e2e-*` for disposable data. Keep `.mefagram`, `.env.local`, credentials, access tokens, personal diagram exports and test reports out of Git. Use synthetic examples in issues, screenshots and test fixtures. Never run setup against a local PGlite database already open in another process.
 
 ## Compatibility
+
+The scoped `minimatch` override under `@typescript-eslint/typescript-estree` applies the fix for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249) without downgrading Next.js tooling. Node 24 is compatible; lint/typecheck and installation are verified with this override. Remove it when the upstream dependency range includes the patched release.
 
 Preserve stable node and edge IDs and the versioned export format. Schema changes need a migration and upgrade/restore coverage; do not rewrite already-applied migrations. Changing the MCP contract requires updating its input descriptions and agent documentation. Require expected revisions and retry-safe mutation IDs for writes.
 

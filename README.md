@@ -35,7 +35,7 @@ npm start
 
 Open [127.0.0.1:3000](http://127.0.0.1:3000). Your generated login password and bootstrap agent token are stored privately in `.mefagram/local-access.json`; setup prints the path without printing the secrets. New workspaces start empty. Name/email options are optional; the email is a login identifier, not an email delivery service.
 
-Subsequent starts only need `npm start`. Use `npm run dev` for development. Stop the app before rerunning setup; one Node process owns a local PGlite directory. For an optional proposed product-studio example, run `npm run setup -- --example mefa-apps` while stopped. Repeating setup preserves existing data, credentials and edits to that example.
+Subsequent starts only need `npm start`. Use `npm run dev` for development. Stop the app before rerunning setup; one Node process owns a local PGlite directory. For an optional fictional newsletter example, run `npm run setup -- --example newsletter` while stopped. Repeating setup preserves existing data, credentials and edits to that example.
 
 [Installation, updates and backup](docs/installation.md) · [Türkçe başlangıç](docs/README.tr.md)
 

@@ -15,9 +15,11 @@ npm start
 
 Open `http://127.0.0.1:3000`. The generated login password and bootstrap agent token are in `.mefagram/local-access.json`; the terminal prints its path, never the secret values. The email is a login identifier; this version does not send email or provide an email-based password-reset service. Omitting name/email uses `Mefagram owner` and `owner@mefagram.local`.
 
-New installations start empty. For the optional proposed Mefa Apps lifecycle map, stop the app and run `npm run setup -- --example mefa-apps`, then start it again. Repeating this command reuses the original sample creation; edits are preserved and no duplicate is created. You can also choose the sample from the empty workspace. It is a template, not verified company documentation.
+New installations start empty. For the optional fictional Relay newsletter workflow, stop the app and run `npm run setup -- --example newsletter`, then start it again. Repeating this command reuses the original sample creation; edits are preserved and no duplicate is created. You can also choose the sample from the empty workspace. The sample matches the fictional example shown in the README.
 
 After the initial build, `npm start` reopens the saved workspace. `npm run dev` runs the development server. Keep one Node process per local PGlite directory. If port 3000 is occupied, configure `BETTER_AUTH_URL` for the chosen origin before setup, then start with `npm start -- --port 3200` (using the same port).
+
+The previous example flag remains accepted for compatibility. Repeating it on an older workspace preserves the existing sample and its edits; updates never replace user diagrams.
 
 ## Configuration
 

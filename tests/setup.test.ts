@@ -156,7 +156,7 @@ describe("portable setup through the real CLI", () => {
     } finally {
       await empty.close();
     }
-    expect(await setup(cwd, ["--example", "mefa-apps"])).toMatchObject({
+    expect(await setup(cwd, ["--example", "newsletter"])).toMatchObject({
       code: 0,
     });
     const db = await createDatabase({
@@ -169,6 +169,7 @@ describe("portable setup through the real CLI", () => {
       const service = new DiagramService(db);
       const maps = await service.list(ownerId);
       expect(maps).toHaveLength(1);
+      expect(maps[0].title).toBe("Relay newsletter workflow");
       id = maps[0].id;
       await service.patch(
         ownerId,
@@ -177,7 +178,7 @@ describe("portable setup through the real CLI", () => {
         [
           {
             op: "update_node",
-            id: "problem",
+            id: "ideas",
             changes: { notes: "Preserve my own research." },
           },
         ],
@@ -186,7 +187,7 @@ describe("portable setup through the real CLI", () => {
     } finally {
       await db.close();
     }
-    expect(await setup(cwd, ["--example", "mefa-apps"])).toMatchObject({
+    expect(await setup(cwd, ["--example", "newsletter"])).toMatchObject({
       code: 0,
     });
     expect(await saved(cwd)).toEqual(before);
@@ -199,7 +200,7 @@ describe("portable setup through the real CLI", () => {
       const map = await service.get(ownerId, id);
       expect(map.revision).toBe(2);
       expect(
-        map.document.nodes.find((node) => node.id === "problem")?.notes,
+        map.document.nodes.find((node) => node.id === "ideas")?.notes,
       ).toBe("Preserve my own research.");
       expect(await service.revisions(ownerId, id)).toHaveLength(2);
       expect(
@@ -209,6 +210,66 @@ describe("portable setup through the real CLI", () => {
       await reopened.close();
     }
   }, 60_000);
+
+  test("keeps an edited legacy sample when its old setup option is repeated after an upgrade", async () => {
+    const cwd = await directory();
+    expect(await setup(cwd)).toMatchObject({ code: 0 });
+    const before = await saved(cwd);
+    const db = await createDatabase({
+      dataDir: join(cwd, before.config.MEFAGRAM_DATA_DIR),
+    });
+    let ownerId = "";
+    let id = "";
+    try {
+      ownerId = (await db.query('SELECT id FROM "user"')).rows[0].id as string;
+      const service = new DiagramService(db);
+      const original = await service.create(
+        ownerId,
+        {
+          title: "My existing sample",
+          document: {
+            schemaVersion: 1,
+            nodes: [{ id: "legacy", label: "Keep my own workflow" }],
+            edges: [],
+          },
+        },
+        "initial-mefa-apps-template-v1",
+      );
+      id = original.id;
+      await service.patch(
+        ownerId,
+        id,
+        1,
+        [
+          {
+            op: "update_node",
+            id: "legacy",
+            changes: { notes: "My existing notes" },
+          },
+        ],
+        "legacy-customization",
+      );
+    } finally {
+      await db.close();
+    }
+    expect(await setup(cwd, ["--example", "mefa-apps"])).toMatchObject({
+      code: 0,
+    });
+    const reopened = await createDatabase({
+      dataDir: join(cwd, before.config.MEFAGRAM_DATA_DIR),
+    });
+    try {
+      const service = new DiagramService(reopened);
+      expect(await service.list(ownerId)).toHaveLength(1);
+      const record = await service.get(ownerId, id);
+      expect(record.document.nodes[0].notes).toBe("My existing notes");
+      expect(record.revision).toBe(2);
+      expect(await service.revisions(ownerId, id)).toHaveLength(2);
+      expect(await saved(cwd)).toEqual(before);
+    } finally {
+      await reopened.close();
+    }
+  });
 
   test("refuses a different owner without rewriting working configuration or credentials", async () => {
     const cwd = await directory();

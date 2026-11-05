@@ -7,7 +7,7 @@ import { DiagramError } from "@/lib/diagrams/errors";
 import { DiagramService } from "@/lib/diagrams/service";
 import { validated } from "@/lib/diagrams/schema";
 import { operationsSchema } from "@/lib/diagrams/patch";
-import { mefaAppsTemplate } from "@/lib/diagrams/seed";
+import { newsletterTemplate } from "@/lib/diagrams/seed";
 import { errorResponse, json, readJson } from "./response";
 
 export interface ApiContext {
@@ -103,11 +103,16 @@ export function createApiHandler(context: ApiContext) {
           ),
           201,
         );
-      if (path === "/api/templates/mefa-apps" && request.method === "POST")
+      if (
+        ["/api/templates/newsletter", "/api/templates/mefa-apps"].includes(
+          path,
+        ) &&
+        request.method === "POST"
+      )
         return json(
           await service.create(
             identity.userId,
-            mefaAppsTemplate(),
+            newsletterTemplate(),
             mutationId(),
           ),
           201,

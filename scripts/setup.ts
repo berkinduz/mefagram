@@ -8,7 +8,7 @@ import { createDatabase } from "../src/lib/db";
 import { createAuth } from "../src/lib/auth/server";
 import { PersonalTokenService } from "../src/lib/auth/tokens";
 import { DiagramService } from "../src/lib/diagrams/service";
-import { mefaAppsTemplate } from "../src/lib/diagrams/seed";
+import { newsletterTemplate } from "../src/lib/diagrams/seed";
 
 const { values } = parseArgs({
   options: {
@@ -24,7 +24,7 @@ if (values.help) {
 
   npm run setup
   npm run setup -- --name "Your name" --email you@example.com
-  npm run setup -- --example mefa-apps
+  npm run setup -- --example newsletter
 
 New workspaces start empty. The example is optional and is never reset.
 --name and --email configure a new owner; existing accounts are preserved.
@@ -33,8 +33,8 @@ BETTER_AUTH_URL, BETTER_AUTH_SECRET, MEFAGRAM_SETUP_KEY, DATABASE_URL.
 Stop the local app before running setup. Credentials stay in .mefagram/.`);
   process.exit(0);
 }
-if (values.example && values.example !== "mefa-apps")
-  throw new Error("Unknown example. Available: mefa-apps.");
+if (values.example && !["newsletter", "mefa-apps"].includes(values.example))
+  throw new Error("Unknown example. Available: newsletter.");
 
 async function optionalFile(path: string) {
   try {
@@ -185,12 +185,24 @@ try {
     access.agentToken = token.token;
   }
   access.baseURL = config.BETTER_AUTH_URL;
-  if (values.example === "mefa-apps")
-    await new DiagramService(db, "setup").create(
-      ownerId,
-      mefaAppsTemplate(),
-      "initial-mefa-apps-template-v1",
-    );
+  if (values.example) {
+    // The old flag must preserve a previously created/edited sample even when
+    // the bundled public example changes. Never reuse its mutation ID with
+    // different content or reset the owner's original diagram.
+    const legacy =
+      values.example === "mefa-apps"
+        ? await db.query(
+            "SELECT mutation_key FROM diagram_mutations WHERE owner_id = $1 AND mutation_key = $2",
+            [ownerId, "initial-mefa-apps-template-v1"],
+          )
+        : { rows: [] };
+    if (!legacy.rows.length)
+      await new DiagramService(db, "setup").create(
+        ownerId,
+        newsletterTemplate(),
+        "initial-newsletter-template-v1",
+      );
+  }
   // Validate the existing owner before rewriting any working configuration.
   await writeFile(accessFile, JSON.stringify(access, null, 2) + "\n", {
     mode: 0o600,

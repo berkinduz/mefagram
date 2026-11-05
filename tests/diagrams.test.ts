@@ -6,7 +6,7 @@ import { createDatabase } from "@/lib/db";
 import { DiagramService } from "@/lib/diagrams/service";
 
 const fixture = {
-  title: "Mefa Apps çalışma haritası",
+  title: "Örnek çalışma haritası",
   description: "Bir süreç haritası",
   tags: ["stüdyo"],
   document: {
@@ -351,7 +351,7 @@ describe("persistent diagram operations", () => {
       ),
     ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
     const unchanged = await service.get("atomic-owner", saved.id);
-    expect(unchanged.title).toBe("Mefa Apps çalışma haritası");
+    expect(unchanged.title).toBe("Örnek çalışma haritası");
     expect(unchanged.revision).toBe(1);
     expect(await service.revisions("atomic-owner", saved.id)).toHaveLength(1);
   });
@@ -465,7 +465,7 @@ test("retains saved content after closing and reopening the filesystem database"
       "restart-owner",
       saved.id,
     );
-    expect(reopened.title).toBe("Mefa Apps çalışma haritası");
+    expect(reopened.title).toBe("Örnek çalışma haritası");
     expect(reopened.document.nodes[0].description).toBe("Fikri araştır");
     expect(reopened.revision).toBe(1);
   } finally {

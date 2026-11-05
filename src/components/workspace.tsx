@@ -893,13 +893,13 @@ export function Workspace({
                 className="button"
                 onClick={async () => {
                   try {
-                    await createRecord("/api/templates/mefa-apps");
+                    await createRecord("/api/templates/newsletter");
                   } catch (failure) {
                     showError(failure);
                   }
                 }}
               >
-                Mefa Apps örneğini aç
+                Kurgusal örneği aç
               </button>
             </div>
           </section>

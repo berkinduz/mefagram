@@ -15,7 +15,7 @@ npm run build
 npm start
 ```
 
-`http://127.0.0.1:3000` adresini aç. Giriş parolası `.mefagram/local-access.json` içindedir. Yeni çalışma alanı boştur. İsteğe bağlı Mefa Apps örneği için sunucu kapalıyken `npm run setup -- --example mefa-apps` çalıştır. Bu harita bir başlangıç önerisidir.
+`http://127.0.0.1:3000` adresini aç. Giriş parolası `.mefagram/local-access.json` içindedir. Yeni çalışma alanı boştur. İsteğe bağlı kurgusal newsletter örneği için sunucu kapalıyken `npm run setup -- --example newsletter` çalıştır. Bu örnekteki bütün içerik kurgusaldır.
 
 Sonraki açılışlarda `npm start` yeterlidir. Güncellemeden ve yedekten önce sunucuyu durdur; `.mefagram`, `.env.local` ve `MEFAGRAM_DATA_DIR` ile seçilen veritabanı dizininin tamamını özel bir konumda sakla. Varsayılan veritabanı `.mefagram/db` içindedir; dışarıda özel bir dizin seçtiysen onu da ayrıca yedeklemelisin. Kurulumu yeniden çalıştırmak mevcut hesabı, anahtarları, diyagramları ve geçmişi sıfırlamaz.
 

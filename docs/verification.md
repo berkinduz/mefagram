@@ -1,13 +1,22 @@
-# Verification record — v0.1.0
+# Verification record
 
 Evidence is recorded separately for the application, its portable installer and a particular hosted deployment. Fixtures are synthetic. Private databases, credentials and raw local reports are excluded from Git and deployment bundles.
+
+
+## Community readiness — v0.1.1
+
+The repository is intended for a developer running their own single-owner local or private hosted workspace. No maintainer account, personal deployment, model API key or paid canvas feature is required. One owner’s agents connect to that installation’s authenticated MCP endpoint; the browser reads the same canonical data.
+
+The optional installer sample, empty-workspace action and README now use the same fictional newsletter export. Real CLI tests cover repeating setup and preserving an older edited sample/history. The authenticated template API is also exercised. Local verification on 2026-11-05 passed 46 tests, 12 optimized-production Chromium flows, typecheck, lint, production build and bundle privacy. Three native Postgres cases require the CI database. `npm audit` and `npm audit --omit=dev` both reported zero vulnerabilities after the scoped tooling patch.
+
+The constraints below remain part of the supported scope: the interface is Turkish; Windows, a full accessibility audit and actual third-party Dot authorization have not been independently certified. A live remote agent requires the installer’s own reachable HTTPS deployment and credentials. Protocol-level MCP/OAuth tests do not claim a particular user’s cloud account has been configured.
 
 ## Automated application checks
 
 | Check | Observed coverage |
 | --- | --- |
 | TypeScript and ESLint | Type checking and lint pass |
-| Local tests | 44 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
+| Local tests | 46 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
 | Native Postgres | Separate integration suite covers real auth/login/token, ownership, concurrent writes/history, reopen and JSON round-trip; CI supplies an isolated PostgreSQL service |
 | MCP | Official SDK clients exercise tool discovery, create/read/update, scope checks, stale writes and two independent clients sharing canonical state |
 | OAuth | Real HTTP authorization flow: discovery, dynamic registration, login/consent, PKCE exchange and resource-bound access token |

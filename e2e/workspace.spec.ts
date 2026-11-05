@@ -25,31 +25,29 @@ test("opens a real saved diagram, drills into a phase and keeps reading mode del
   page,
 }) => {
   await login(page);
-  await page
-    .getByRole("button", { name: /Mefa Apps ürün yaşam döngüsü/ })
-    .click();
+  await page.getByRole("button", { name: /Relay newsletter workflow/ }).click();
   await expect(
     page.getByRole("heading", {
-      name: "Mefa Apps ürün yaşam döngüsü",
+      name: "Relay newsletter workflow",
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.locator(".react-flow__node")).toHaveCount(7);
+  await expect(page.locator(".react-flow__node")).toHaveCount(6);
   await page
-    .getByRole("button", { name: "Ürün araştırması aşamasını aç" })
+    .getByRole("button", { name: "Collect ideas aşamasını aç" })
     .click();
   await expect(
     page.getByRole("button", { name: "Genel haritaya dön" }),
   ).toBeVisible();
-  await expect(page.locator(".react-flow__node")).toHaveCount(3);
+  await expect(page.locator(".react-flow__node")).toHaveCount(2);
   const problem = page.locator(".react-flow__node", {
-    hasText: "Problemi tanımla",
+    hasText: "Collect questions",
   });
   await problem.focus();
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("complementary", { name: "Düğüm detayları" }),
-  ).toContainText("Mevcut çözümler neden yeterli değil?");
+  ).toContainText("A fictional step in the Relay newsletter demo.");
   await expect(async () => {
     const node = (await problem.boundingBox())!;
     const canvas = (await page.locator(".react-flow").boundingBox())!;
@@ -231,13 +229,11 @@ test("keeps a failed form and safely reconciles a lost save response after furth
   page,
 }) => {
   await login(page);
+  await page.getByRole("button", { name: /Relay newsletter workflow/ }).click();
   await page
-    .getByRole("button", { name: /Mefa Apps ürün yaşam döngüsü/ })
+    .getByRole("button", { name: "Collect ideas aşamasını aç" })
     .click();
-  await page
-    .getByRole("button", { name: "Ürün araştırması aşamasını aç" })
-    .click();
-  await page.getByText("Problemi tanımla", { exact: true }).first().click();
+  await page.getByText("Collect questions", { exact: true }).first().click();
   await page.getByRole("button", { name: "Düzenle", exact: true }).click();
   await page.getByRole("button", { name: "Düğümü düzenle" }).click();
   const description = page.getByRole("textbox", {

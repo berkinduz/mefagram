@@ -6,6 +6,7 @@ const config: NextConfig = {
   outputFileTracingExcludes: {
     "/*": [
       "./.mefagram/**/*",
+      "./.netlify/**/*",
       "./.superpowers/**/*",
       "./.env*",
       "./test-results/**/*",

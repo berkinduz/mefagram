@@ -11,7 +11,7 @@ for (const path of [
   await rm(path, { recursive: true, force: true });
 const setup = spawn(
   process.execPath,
-  ["--import", "tsx", "scripts/setup.ts", "--e2e", "--example", "mefa-apps"],
+  ["--import", "tsx", "scripts/setup.ts", "--e2e", "--example", "newsletter"],
   { stdio: "inherit" },
 );
 await new Promise<void>((resolve, reject) =>

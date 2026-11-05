@@ -13,7 +13,7 @@ for (const path of manifests) {
   const manifest = JSON.parse(await readFile(`.next/server/${path}`, "utf8"));
   for (const file of manifest.files)
     if (
-      /(?:^|\/)(?:\.mefagram|\.superpowers|test-results|playwright-report)(?:\/|$)|(?:^|\/)\.env(?:\.|$)/.test(
+      /(?:^|\/)(?:\.mefagram|\.netlify|\.superpowers|test-results|playwright-report)(?:\/|$)|(?:^|\/)\.env(?:\.|$)/.test(
         file,
       )
     )

@@ -77,6 +77,34 @@ describe("authenticated HTTP diagram workflow", () => {
     ).toBe(401);
   });
 
+  test("creates the same fictional newsletter example through the authenticated template API", async () => {
+    expect(
+      (
+        await request(
+          "/api/templates/newsletter",
+          "POST",
+          undefined,
+          "unauth-template",
+          "",
+        )
+      ).status,
+    ).toBe(401);
+    const response = await request(
+      "/api/templates/newsletter",
+      "POST",
+      undefined,
+      "newsletter-template",
+    );
+    expect(response.status).toBe(201);
+    const created = await response.json();
+    expect(created.title).toBe("Relay newsletter workflow");
+    expect(created.document.nodes).toHaveLength(18);
+    expect(created.document.edges).toHaveLength(12);
+    expect(
+      (await (await request(`/api/diagrams/${created.id}`)).json()).document,
+    ).toEqual(created.document);
+  });
+
   test("creates, reopens, updates, exports, imports and archives a real record", async () => {
     const createdResponse = await request(
       "/api/diagrams",

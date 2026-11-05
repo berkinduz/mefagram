@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.1.1 — 2026-11-05
+
+- Use the fictional Relay newsletter workflow consistently in the README, optional setup and empty-workspace action.
+- Preserve edited samples and history when upgrading an existing installation that uses the legacy example option.
+- Keep the legacy template endpoint as an alias; add authenticated HTTP and real CLI coverage.
+- Exclude Netlify deployment state from source control and private deployment traces.
+- Pin the patched development-only minimatch dependency without downgrading Next.js tooling.
+
 ## v0.1.0 — 2026-11-04
 
 First public release of the private Agent–Diagram–User workspace.
