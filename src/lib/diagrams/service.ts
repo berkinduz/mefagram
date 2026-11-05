@@ -10,6 +10,7 @@ import {
   exportSchema,
   idSchema,
   validated,
+  type DiagramContent,
   type DiagramExport,
   type DiagramRecord,
 } from "./schema";
@@ -55,22 +56,49 @@ export class DiagramService {
       ownerId,
       mutationId,
       { action: "create", content },
-      async (transaction) => {
-        const saved = await this.repository.insert(
-          transaction,
-          ownerId,
-          randomUUID(),
-          content,
-        );
-        await this.repository.appendRevision(
-          transaction,
-          saved,
-          this.actor,
-          "Diyagram oluşturuldu",
-        );
-        return saved;
-      },
+      (transaction) => this.insertNew(transaction, ownerId, content),
     );
+  }
+
+  async createTemplate(
+    ownerId: string,
+    input: unknown,
+    mutationId: string,
+    legacy = false,
+  ) {
+    const content = validated(createDiagramSchema, input);
+    return this.mutate(
+      ownerId,
+      mutationId,
+      // The HTTP request selects a template; its bundled content may change
+      // between retries across releases without changing the user's request.
+      { action: "create_template", template: "newsletter" },
+      (transaction) => this.insertNew(transaction, ownerId, content),
+      // Exact v0.1.0 template-create fingerprint, never arbitrary receipts.
+      legacy
+        ? ["49134bd4e4561cf8440572aab5e3ff1e12446484a70be0b9439a469c5ee2a6b4"]
+        : [],
+    );
+  }
+
+  private async insertNew(
+    transaction: SqlExecutor,
+    ownerId: string,
+    content: DiagramContent,
+  ) {
+    const saved = await this.repository.insert(
+      transaction,
+      ownerId,
+      randomUUID(),
+      content,
+    );
+    await this.repository.appendRevision(
+      transaction,
+      saved,
+      this.actor,
+      "Diyagram oluşturuldu",
+    );
+    return saved;
   }
 
   async patch(
@@ -190,6 +218,7 @@ export class DiagramService {
     mutationId: string,
     request: unknown,
     operation: (transaction: SqlExecutor) => Promise<DiagramRecord>,
+    legacyHashes: readonly string[] = [],
   ): Promise<DiagramRecord> {
     validated(z.string().min(1).max(128), mutationId);
     if (!ownerId) throw new DiagramError("UNAUTHORIZED", "Oturum açın.", 401);
@@ -205,7 +234,10 @@ export class DiagramService {
           "SELECT request_hash, result FROM diagram_mutations WHERE owner_id = $1 AND mutation_key = $2",
           [ownerId, mutationId],
         );
-        if (result.rows[0]?.request_hash !== hash)
+        if (
+          result.rows[0]?.request_hash !== hash &&
+          !legacyHashes.includes(String(result.rows[0]?.request_hash))
+        )
           throw new DiagramError(
             "IDEMPOTENCY_CONFLICT",
             "Bu işlem kimliği başka bir istek için kullanılmış.",

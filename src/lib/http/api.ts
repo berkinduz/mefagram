@@ -110,10 +110,11 @@ export function createApiHandler(context: ApiContext) {
         request.method === "POST"
       )
         return json(
-          await service.create(
+          await service.createTemplate(
             identity.userId,
             newsletterTemplate(),
             mutationId(),
+            path === "/api/templates/mefa-apps",
           ),
           201,
         );

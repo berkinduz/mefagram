@@ -103,6 +103,81 @@ describe("authenticated HTTP diagram workflow", () => {
     expect(
       (await (await request(`/api/diagrams/${created.id}`)).json()).document,
     ).toEqual(created.document);
+    const aliasRetry = await request(
+      "/api/templates/mefa-apps",
+      "POST",
+      undefined,
+      "newsletter-template",
+    );
+    expect(aliasRetry.status).toBe(201);
+    expect((await aliasRetry.json()).id).toBe(created.id);
+  });
+
+  test("replays a legacy template receipt from before an upgrade without replacing later edits", async () => {
+    const key = "pre-upgrade-template";
+    const created = await (
+      await request("/api/diagrams", "POST", fixture, key)
+    ).json();
+    // Fingerprint produced by v0.1.0 for its bundled template. Persisted legacy
+    // receipt state is represented without copying the old project example.
+    const legacyHash =
+      "49134bd4e4561cf8440572aab5e3ff1e12446484a70be0b9439a469c5ee2a6b4";
+    expect(
+      (
+        await db.query(
+          "UPDATE diagram_mutations SET request_hash = $1 WHERE mutation_key = $2 RETURNING mutation_key",
+          [legacyHash, key],
+        )
+      ).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await request(
+          `/api/diagrams/${created.id}`,
+          "PATCH",
+          {
+            expectedRevision: 1,
+            operations: [
+              {
+                op: "update_node",
+                id: "first",
+                changes: { notes: "Keep the owner's later edit" },
+              },
+            ],
+          },
+          "edit-before-retry",
+        )
+      ).status,
+    ).toBe(200);
+    const retry = await request(
+      "/api/templates/mefa-apps",
+      "POST",
+      undefined,
+      key,
+    );
+    expect(retry.status).toBe(201);
+    expect(await retry.json()).toEqual(created);
+    const latest = await (await request(`/api/diagrams/${created.id}`)).json();
+    expect(latest.revision).toBe(2);
+    expect(latest.document.nodes[0].notes).toBe("Keep the owner's later edit");
+  });
+
+  test("does not replay unrelated creation receipts through the legacy template endpoint", async () => {
+    const key = "unrelated-create";
+    const created = await (
+      await request("/api/diagrams", "POST", fixture, key)
+    ).json();
+    const retry = await request(
+      "/api/templates/mefa-apps",
+      "POST",
+      undefined,
+      key,
+    );
+    expect(retry.status).toBe(409);
+    expect((await retry.json()).code).toBe("IDEMPOTENCY_CONFLICT");
+    expect(
+      (await (await request(`/api/diagrams/${created.id}`)).json()).revision,
+    ).toBe(1);
   });
 
   test("creates, reopens, updates, exports, imports and archives a real record", async () => {

@@ -4,7 +4,7 @@
 
 - Use the fictional Relay newsletter workflow consistently in the README, optional setup and empty-workspace action.
 - Preserve edited samples and history when upgrading an existing installation that uses the legacy example option.
-- Keep the legacy template endpoint as an alias; add authenticated HTTP and real CLI coverage.
+- Keep the legacy template endpoint as an alias and replay pre-upgrade template requests safely; unrelated mutation-key reuse remains rejected. Add authenticated HTTP and real CLI coverage.
 - Exclude Netlify deployment state from source control and private deployment traces.
 - Pin the patched development-only minimatch dependency without downgrading Next.js tooling.
 
