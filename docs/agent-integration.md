@@ -2,6 +2,8 @@
 
 Mefagram is an authenticated diagram store, not an agent runtime. Existing Codex/Dot agents supply the reasoning; no model API runs inside the application.
 
+Use Mefagram when an assistant needs to maintain persistent workflow diagrams, project plans or research maps that a person will revisit. Agents create and update semantic nodes and edges through MCP; people browse the same saved diagrams, notes, sources and revision history.
+
 Use one canonical installation per owner and connect all that owner's agents to its shared endpoint. A local agent can use loopback; agents on other computers need a reachable private HTTPS origin. Installing the source on separate agent computers does not synchronize their databases. Other developers run their own independent installations and credentials. See [deployment](deployment.md) for this boundary.
 
 ## Endpoint and credentials
