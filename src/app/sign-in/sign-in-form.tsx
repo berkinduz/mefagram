@@ -29,14 +29,14 @@ export function SignInForm() {
       if (!response.ok) {
         setError(
           response.status === 429
-            ? "Çok fazla deneme yapıldı. Bir dakika sonra yeniden dene."
-            : "E-posta veya parola doğru değil. Bilgilerini kontrol et.",
+            ? "Too many attempts. Please try again in a minute."
+            : "Email or password is incorrect. Check your details.",
         );
         return;
       }
       window.location.assign(result.redirect && result.url ? result.url : "/");
     } catch {
-      setError("Çalışma alanına bağlanılamadı. Yeniden dene.");
+      setError("Could not connect to the workspace. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -50,32 +50,32 @@ export function SignInForm() {
         <div className="private-icon">
           <LockKeyhole size={21} />
         </div>
-        <h1>Haritalarına dön.</h1>
+        <h1>Welcome back to your maps.</h1>
         <p>
-          Fikirlerini bir arada gör.
+          See your ideas together.
           <br />
-          Bağlantıları keşfet, bir sonraki adımı netleştir.
+          Explore connections and find your next step.
         </p>
         <form onSubmit={submit} className="form-stack">
           <label>
-            E-posta
+            Email
             <input
               name="email"
               type="email"
               autoComplete="username"
               required
               autoFocus
-              placeholder="Hesabının e-posta adresi"
+              placeholder="Your account email"
             />
           </label>
           <label>
-            Parola
+            Password
             <input
               name="password"
               type="password"
               autoComplete="current-password"
               required
-              placeholder="Parolan"
+              placeholder="Your password"
             />
           </label>
           {error && (
@@ -89,17 +89,17 @@ export function SignInForm() {
             ) : (
               <ArrowRight size={17} />
             )}
-            Çalışma alanını aç
+            Open workspace
           </button>
         </form>
         <div className="sign-in-footnote">
-          Yalnızca sana açık bir çalışma alanı.
+          Your private workspace.
           <br />
-          Kurulumda oluşturulan hesabınla giriş yap.
+          Sign in with the account created during setup.
         </div>
       </section>
       <footer className="sign-in-footer">
-        Bir fikirden, anlaşılır bir haritaya.
+        From an idea to a map you can follow.
       </footer>
     </main>
   );

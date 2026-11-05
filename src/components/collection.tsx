@@ -47,16 +47,16 @@ export function Collection({
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   return (
-    <aside className="collection" aria-label="Çalışma alanı">
+    <aside className="collection" aria-label="Workspace">
       <div className="collection-brand">
         <Brand />
       </div>
       <div className="workspace-owner">
         <span className="owner-avatar">
-          {userName.slice(0, 1).toLocaleUpperCase("tr-TR")}
+          {userName.slice(0, 1).toLocaleUpperCase("en")}
         </span>
         <div>
-          <strong>Kişisel alanım</strong>
+          <strong>My workspace</strong>
           <span>{userName}</span>
         </div>
         <ChevronDown size={14} />
@@ -64,15 +64,15 @@ export function Collection({
       <div className="collection-search">
         <Search size={15} />
         <input
-          aria-label="Diyagramlarda ara"
-          placeholder="Diyagramlarda ara"
+          aria-label="Search diagrams"
+          placeholder="Search diagrams"
           value={query}
           onChange={(event) => onQuery(event.target.value)}
         />
         {query && (
           <button
             className="icon-button"
-            aria-label="Aramayı temizle"
+            aria-label="Clear search"
             onClick={() => onQuery("")}
           >
             <X size={13} />
@@ -81,7 +81,7 @@ export function Collection({
       </div>
       <button className="button primary new-diagram" onClick={onNew}>
         <Plus size={16} />
-        Yeni diyagram
+        New diagram
       </button>
       <div className="collection-tabs">
         <button
@@ -89,12 +89,12 @@ export function Collection({
           onClick={() => onArchive(false)}
         >
           <FolderOpen size={15} />
-          Diyagramlar{!archived && <span>{diagrams.length}</span>}
+          Diagrams{!archived && <span>{diagrams.length}</span>}
         </button>
         <button
           className={archived ? "active" : ""}
-          aria-label="Arşivi aç"
-          title="Arşiv"
+          aria-label="Open archive"
+          title="Archive"
           onClick={() => onArchive(!archived)}
         >
           <Archive size={15} />
@@ -102,7 +102,7 @@ export function Collection({
       </div>
       <nav
         className="diagram-list"
-        aria-label="Diyagram koleksiyonu"
+        aria-label="Diagram collection"
         aria-busy={loading}
       >
         {diagrams.map((diagram) => (
@@ -117,9 +117,9 @@ export function Collection({
             <span className="diagram-list-text">
               <strong>{diagram.title}</strong>
               <span>
-                {diagram.nodeCount} düğüm
+                {diagram.nodeCount} {diagram.nodeCount === 1 ? "node" : "nodes"}
                 <span className="list-item-divider" />
-                {diagram.tags[0] ?? "Çalışma haritası"}
+                {diagram.tags[0] ?? "Workflow map"}
               </span>
             </span>
           </button>
@@ -129,14 +129,14 @@ export function Collection({
             <FolderOpen size={23} />
             <p>
               {query
-                ? "Bu aramayla eşleşen diyagram yok."
+                ? "No diagrams match your search."
                 : archived
-                  ? "Arşivde diyagram yok."
-                  : "İlk diyagramına yer aç."}
+                  ? "No archived diagrams."
+                  : "Your first diagram starts here."}
             </p>
             {query && (
               <button className="text-button" onClick={() => onQuery("")}>
-                Aramayı temizle
+                Clear search
               </button>
             )}
           </div>
@@ -150,11 +150,11 @@ export function Collection({
         )}
         <button onClick={onImport}>
           <Import size={16} />
-          Diyagramı içe aktar
+          Import diagram
         </button>
         <button onClick={onConnect}>
           <PlugZap size={16} />
-          Agent bağlantıları
+          Agent connections
         </button>
         <button
           disabled={signingOut}
@@ -172,14 +172,14 @@ export function Collection({
               router.refresh();
             } catch {
               setSignOutError(
-                "Oturum kapatılamadı. Oturumun hâlâ açık; yeniden deneyebilirsin.",
+                "Could not sign out. You are still signed in; please try again.",
               );
               setSigningOut(false);
             }
           }}
         >
           <LogOut size={16} />
-          Oturumu kapat
+          Sign out
         </button>
       </div>
     </aside>

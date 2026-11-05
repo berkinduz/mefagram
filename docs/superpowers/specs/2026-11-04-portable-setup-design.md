@@ -16,7 +16,7 @@ The latest user direction is authoritative: finish and publish a free, contribut
 
 Generalize the existing unattended setup script instead of adding an onboarding server or a hosted dependency. The DB remains authoritative for an existing owner's identity. Existing installations keep their original identity and content; only fresh installations receive generic defaults. Installation options must not rename an existing account silently.
 
-Document local setup, optional samples, configuration, backups/restores, upgrades, agent connection, and private hosting separately. Add MIT licensing for this repository's code; dependencies retain their own licenses. Preserve Turkish UI and the reading-focused experience.
+Document local setup, optional samples, configuration, backups/restores, upgrades, agent connection, and private hosting separately. Add MIT licensing for this repository's code; dependencies retain their own licenses. Keep all interface text and documentation in English and preserve the reading-focused experience.
 
 ## Acceptance
 
@@ -24,4 +24,4 @@ Test the real setup CLI against disposable persistent databases, including optio
 
 GitHub publication is the final release step after this local preparation and verification.
 
-Release requirements: English quick start with Turkish documentation, MIT license for original code, contributor/security guidance, CI on standard public GitHub runners, shared-MCP concurrency evidence, optional external-Postgres verification in CI, and explicit documented boundaries for hosted-provider/Dot acceptance. No provider, paid plan, public tunnel, or personal cloud installation is activated for this release.
+Release requirements: English quick start and documentation, MIT license for original code, contributor/security guidance, CI on standard public GitHub runners, shared-MCP concurrency evidence, optional external-Postgres verification in CI, and explicit documented boundaries for hosted-provider/Dot acceptance. No provider, paid plan, public tunnel, or personal cloud installation is activated for this release.

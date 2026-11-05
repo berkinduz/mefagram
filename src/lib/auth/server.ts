@@ -48,12 +48,12 @@ export function createAuth(database: Database, config: AuthConfig) {
           String(context.body?.email ?? "").toLowerCase() !== config.ownerEmail
         )
           throw new APIError("FORBIDDEN", {
-            message: "Yeni hesap oluşturma kapalı.",
+            message: "Account registration is disabled.",
           });
         const existing = await database.query('SELECT id FROM "user" LIMIT 1');
         if (existing.rows.length)
           throw new APIError("FORBIDDEN", {
-            message: "Çalışma alanının sahibi zaten oluşturulmuş.",
+            message: "The workspace owner already exists.",
           });
       }),
     },

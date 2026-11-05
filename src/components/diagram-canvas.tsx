@@ -55,11 +55,11 @@ type MapNode = Node<
 >;
 type MapEdge = Edge<{ route: LayoutEdge }, "routed">;
 const kindLabels = {
-  phase: "Aşama",
-  step: "Adım",
-  decision: "Karar",
-  note: "Not",
-  result: "Çıktı",
+  phase: "Phase",
+  step: "Step",
+  decision: "Decision",
+  note: "Note",
+  result: "Result",
 };
 const positions = {
   top: Position.Top,
@@ -94,7 +94,7 @@ const DiagramCard = memo(function DiagramCard({
           position={position}
           id={id}
           isConnectable={editing}
-          aria-label={`${item.label} bağlantı noktası`}
+          aria-label={`${item.label} connection handle`}
         />
       ))}
       <div className="map-card-top">
@@ -105,30 +105,34 @@ const DiagramCard = memo(function DiagramCard({
         {item.sources.length > 0 && (
           <span
             className="node-resource-count"
-            title={`${item.sources.length} kaynak`}
+            title={`${item.sources.length} ${item.sources.length === 1 ? "source" : "sources"}`}
           >
-            {item.sources.length} kaynak
+            {item.sources.length}{" "}
+            {item.sources.length === 1 ? "source" : "sources"}
           </span>
         )}
       </div>
       <h3>{item.label}</h3>
-      <p>{item.description || "Açıklama henüz eklenmedi."}</p>
+      <p>{item.description || "No description yet."}</p>
       {item.childCount > 0 ? (
         <button
           className="node-drill nodrag nopan"
-          aria-label={`${item.label} aşamasını aç`}
+          aria-label={`Open ${item.label} phase`}
           onClick={(event) => {
             event.stopPropagation();
             onDrill(item.id);
           }}
         >
-          <span>{item.childCount} alt adım</span>
+          <span>
+            {item.childCount}{" "}
+            {item.childCount === 1 ? "child step" : "child steps"}
+          </span>
           <ChevronRight size={15} />
         </button>
       ) : item.notes ? (
         <div className="node-note">
           <StickyNote size={12} />
-          Notlar var
+          Has notes
         </div>
       ) : null}
     </article>
@@ -213,26 +217,26 @@ function CanvasControls({
   const flow = useReactFlow();
   const { zoom } = useViewport();
   return (
-    <div className="canvas-controls" aria-label="Harita görünümü">
+    <div className="canvas-controls" aria-label="Map view">
       <button
-        aria-label="Uzaklaştır"
-        title="Uzaklaştır"
+        aria-label="Zoom out"
+        title="Zoom out"
         onClick={() => flow.zoomOut({ duration: 160 })}
       >
         <Minus size={16} />
       </button>
       <span>{Math.round(zoom * 100)}%</span>
       <button
-        aria-label="Yakınlaştır"
-        title="Yakınlaştır"
+        aria-label="Zoom in"
+        title="Zoom in"
         onClick={() => flow.zoomIn({ duration: 160 })}
       >
         <Plus size={16} />
       </button>
       <i />
       <button
-        aria-label="Haritayı ekrana sığdır"
-        title="Ekrana sığdır (F)"
+        aria-label="Fit map to screen"
+        title="Fit to screen (F)"
         onClick={() =>
           flow.fitView({ padding: 0.13, maxZoom: 1, duration: 240 })
         }
@@ -240,8 +244,8 @@ function CanvasControls({
         <Maximize size={16} />
       </button>
       <button
-        aria-label="Küçük haritayı göster"
-        title="Küçük harita"
+        aria-label="Show minimap"
+        title="Minimap"
         aria-pressed={showMinimap}
         onClick={() => setShowMinimap(!showMinimap)}
       >
@@ -405,7 +409,7 @@ function CanvasScene(props: CanvasProps) {
             height: 16,
             color: colour,
           },
-          ariaLabel: route.label || "Düğümler arasındaki bağlantı",
+          ariaLabel: route.label || "Connection between nodes",
         };
       });
   }, [layout, graph.edges, selectedId, focus]);
@@ -510,12 +514,12 @@ function CanvasScene(props: CanvasProps) {
         deleteKeyCode={null}
         selectionOnDrag={false}
         ariaLabelConfig={{
-          "controls.zoomIn.ariaLabel": "Yakınlaştır",
-          "controls.zoomOut.ariaLabel": "Uzaklaştır",
-          "controls.fitView.ariaLabel": "Ekrana sığdır",
+          "controls.zoomIn.ariaLabel": "Zoom in",
+          "controls.zoomOut.ariaLabel": "Zoom out",
+          "controls.fitView.ariaLabel": "Fit to screen",
           "node.a11yDescription.default":
-            "Seçmek için Enter veya boşluk tuşuna basın.",
-          "minimap.ariaLabel": "Harita özeti",
+            "Press Enter or Space to select.",
+          "minimap.ariaLabel": "Map overview",
         }}
       >
         <Background
@@ -541,17 +545,17 @@ function CanvasScene(props: CanvasProps) {
       <div className="canvas-reading-hint">
         <ArrowDownRight size={14} />
         {editing
-          ? "Düğümleri taşıyabilir, bağlantı noktalarını birleştirebilirsin."
-          : "Kaydırarak gezin · Çift tıklayarak aşamayı aç"}
+          ? "Drag nodes to move them. Join their handles to connect them."
+          : "Pan to explore · Double-click to open a phase"}
       </div>
       {(!layout || layoutError) && (
         <div className="canvas-loading" role="status">
           {layoutError ? (
-            "Harita yerleşimi oluşturulamadı. Liste görünümünü kullanabilirsin."
+            "Could not lay out the map. You can use the list view."
           ) : (
             <>
               <Focus size={22} />
-              <span>Harita yerleştiriliyor…</span>
+              <span>Laying out map…</span>
             </>
           )}
         </div>

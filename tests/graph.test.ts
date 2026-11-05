@@ -11,16 +11,19 @@ import { layoutGraph } from "@/lib/graph/layout";
 const document = validated(documentSchema, {
   schemaVersion: 1,
   nodes: [
-    { id: "research", label: "Araştırma", kind: "phase" },
-    { id: "release", label: "Yayın", kind: "phase" },
+    { id: "research", label: "Research", kind: "phase" },
+    { id: "release", label: "Release", kind: "phase" },
     {
       id: "interview",
-      label: "Görüşmeler",
+      label: "Interviews",
       parentId: "research",
-      description: "Kullanıcı ihtiyacını anla",
+      description: "Understand user needs",
+      notes: "Identify unclear decisions",
+      tags: ["Insights"],
+      sources: [{ label: "Interview guide", url: "https://example.org/guide" }],
     },
-    { id: "evidence", label: "Kanıtları topla", parentId: "research" },
-    { id: "launch", label: "Mağazayı aç", parentId: "release" },
+    { id: "evidence", label: "Collect evidence", parentId: "research" },
+    { id: "launch", label: "Open the store", parentId: "release" },
   ],
   edges: [
     { id: "within", source: "interview", target: "evidence" },
@@ -64,7 +67,7 @@ test("drills into a phase and preserves its internal order and breadcrumb", () =
   expect(projected.edges.map((edge) => edge.originalIds)).toEqual([["within"]]);
   expect(
     breadcrumbsFor(document, "interview").map((node) => node.label),
-  ).toEqual(["Araştırma", "Görüşmeler"]);
+  ).toEqual(["Research", "Interviews"]);
 });
 
 test("retains a real self loop while hiding connections internal to a collapsed phase", async () => {
@@ -76,7 +79,7 @@ test("retains a real self loop while hiding connections internal to a collapsed 
         id: "retry",
         source: "research",
         target: "research",
-        label: "Yeniden değerlendir",
+        label: "Reconsider",
       },
     ],
   });
@@ -94,10 +97,21 @@ test("retains a real self loop while hiding connections internal to a collapsed 
   ).toBeGreaterThan(2);
 });
 
-test("searches Turkish labels, notes and source titles and returns a focused neighbourhood", () => {
-  expect(searchNodes(document, "İHTİYACINI").map((node) => node.id)).toEqual([
-    "interview",
-  ]);
+test("finds English labels, descriptions, notes, tags and sources regardless of case", () => {
+  for (const query of [
+    "INTERVIEWS",
+    "USER NEEDS",
+    "IDENTIFY",
+    "INSIGHTS",
+    "INTERVIEW GUIDE",
+  ]) {
+    expect(searchNodes(document, query).map((node) => node.id)).toEqual([
+      "interview",
+    ]);
+  }
+});
+
+test("returns a focused neighbourhood and can hide feedback connections", () => {
   expect([...neighbourIds(document, "evidence")].sort()).toEqual([
     "evidence",
     "interview",
@@ -132,8 +146,8 @@ test("handles an empty diagram and a disconnected graph without losing nodes", a
     validated(documentSchema, {
       schemaVersion: 1,
       nodes: [
-        { id: "one", label: "Bir" },
-        { id: "two", label: "İki" },
+        { id: "one", label: "One" },
+        { id: "two", label: "Two" },
       ],
       edges: [],
     }),

@@ -46,7 +46,7 @@ export function createApiHandler(context: ApiContext) {
         if (!key || key.length > 128)
           throw new DiagramError(
             "VALIDATION_ERROR",
-            "Idempotency-Key başlığı gerekli (en fazla 128 karakter).",
+            "The Idempotency-Key header is required (up to 128 characters).",
           );
         return key;
       };
@@ -59,7 +59,7 @@ export function createApiHandler(context: ApiContext) {
         if (identity.actor !== "web")
           throw new DiagramError(
             "FORBIDDEN",
-            "Bağlantıları yönetmek için tarayıcıdan oturum açın.",
+            "Sign in through the browser to manage connections.",
             403,
           );
         const tokens = new PersonalTokenService(context.database);
@@ -155,7 +155,7 @@ export function createApiHandler(context: ApiContext) {
           );
         }
       }
-      throw new DiagramError("NOT_FOUND", "İstenen işlem bulunamadı.", 404);
+      throw new DiagramError("NOT_FOUND", "The requested action was not found.", 404);
     } catch (error) {
       return errorResponse(error);
     }

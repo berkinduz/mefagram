@@ -13,11 +13,12 @@ async function login(page: Page) {
     ),
   );
   await page.goto("/sign-in");
-  await page.getByLabel("E-posta").fill(access.email);
-  await page.getByLabel("Parola", { exact: true }).fill(access.password);
-  await page.getByRole("button", { name: "Çalışma alanını aç" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.getByLabel("Email").fill(access.email);
+  await page.getByLabel("Password", { exact: true }).fill(access.password);
+  await page.getByRole("button", { name: "Open workspace" }).click();
   await expect(
-    page.getByRole("navigation", { name: "Diyagram koleksiyonu" }),
+    page.getByRole("navigation", { name: "Diagram collection" }),
   ).toBeVisible();
 }
 
@@ -34,10 +35,10 @@ test("opens a real saved diagram, drills into a phase and keeps reading mode del
   ).toBeVisible();
   await expect(page.locator(".react-flow__node")).toHaveCount(6);
   await page
-    .getByRole("button", { name: "Collect ideas aşamasını aç" })
+    .getByRole("button", { name: "Open Collect ideas phase" })
     .click();
   await expect(
-    page.getByRole("button", { name: "Genel haritaya dön" }),
+    page.getByRole("button", { name: "Back to overview" }),
   ).toBeVisible();
   await expect(page.locator(".react-flow__node")).toHaveCount(2);
   const problem = page.locator(".react-flow__node", {
@@ -46,7 +47,7 @@ test("opens a real saved diagram, drills into a phase and keeps reading mode del
   await problem.focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("complementary", { name: "Düğüm detayları" }),
+    page.getByRole("complementary", { name: "Node details" }),
   ).toContainText("A fictional step in the Relay newsletter demo.");
   await expect(async () => {
     const node = (await problem.boundingBox())!;
@@ -55,11 +56,11 @@ test("opens a real saved diagram, drills into a phase and keeps reading mode del
     expect(node.x + node.width).toBeLessThanOrEqual(canvas.x + canvas.width);
   }).toPass();
   await expect(
-    page.getByRole("button", { name: "Düğümü düzenle" }),
+    page.getByRole("button", { name: "Edit node" }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "Düzenle", exact: true }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Düğümü düzenle" }),
+    page.getByRole("button", { name: "Edit node" }),
   ).toBeVisible();
   await problem.focus();
   await page.keyboard.press("ArrowRight");
@@ -81,28 +82,28 @@ test("creates, edits and reopens a map from another browser session", async ({
   browser,
 }) => {
   await login(page);
-  const title = `Tarayıcı kayıt testi ${Date.now()}`;
+  const title = `Browser save test ${Date.now()}`;
   await page
-    .getByRole("button", { name: "Yeni diyagram", exact: true })
+    .getByRole("button", { name: "New diagram", exact: true })
     .click();
-  await page.getByLabel("Diyagram adı").fill(title);
+  await page.getByLabel("Diagram name").fill(title);
   await page
-    .getByRole("button", { name: "Diyagramı oluştur", exact: true })
+    .getByRole("button", { name: "Create diagram", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Düzenle", exact: true }).click();
-  await page.getByRole("button", { name: "Düğüm ekle", exact: true }).click();
-  await page.getByLabel("Düğüm adı").fill("Kaydedilen düğüm");
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Add node", exact: true }).click();
+  await page.getByLabel("Node name").fill("Saved node");
   await page
-    .getByLabel("Açıklama", { exact: true })
-    .fill("Bağımsız oturumda da görünmeli.");
+    .getByLabel("Description", { exact: true })
+    .fill("Visible in a separate browser session.");
   await page
-    .getByRole("button", { name: "Düğümü kaydet", exact: true })
+    .getByRole("button", { name: "Save node", exact: true })
     .click();
   await expect(
-    page.getByText("Kaydedilen düğüm", { exact: true }).first(),
+    page.getByText("Saved node", { exact: true }).first(),
   ).toBeVisible();
   await page.reload();
   await expect(
@@ -113,13 +114,13 @@ test("creates, edits and reopens a map from another browser session", async ({
     const second = await separate.newPage();
     await login(second);
     await second
-      .getByRole("textbox", { name: "Diyagramlarda ara" })
+      .getByRole("textbox", { name: "Search diagrams" })
       .fill(title);
     await second.getByRole("button", { name: new RegExp(title) }).click();
-    await second.getByText("Kaydedilen düğüm", { exact: true }).first().click();
+    await second.getByText("Saved node", { exact: true }).first().click();
     await expect(
-      second.getByRole("complementary", { name: "Düğüm detayları" }),
-    ).toContainText("Bağımsız oturumda da görünmeli.");
+      second.getByRole("complementary", { name: "Node details" }),
+    ).toContainText("Visible in a separate browser session.");
   } finally {
     await separate.close();
   }
@@ -130,7 +131,7 @@ test("shows an expired login as a sign-in screen instead of exposing the workspa
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Çalışma alanını aç" }),
+    page.getByRole("button", { name: "Open workspace" }),
   ).toBeVisible();
   const response = await page.request.get("/api/diagrams");
   expect(response.status()).toBe(401);
@@ -164,10 +165,10 @@ test("shows real MCP writes in the reader and exports the saved content", async 
     const result = await client.callTool({
       name: "create_diagram",
       arguments: {
-        title: "MCP tarayıcı doğrulaması",
+        title: "MCP browser verification",
         document: {
           schemaVersion: 1,
-          nodes: [{ id: "mcp-reader", label: "Agentın eklediği adım" }],
+          nodes: [{ id: "mcp-reader", label: "Step added by an agent" }],
           edges: [],
         },
         mutationId: crypto.randomUUID(),
@@ -185,7 +186,7 @@ test("shows real MCP writes in the reader and exports the saved content", async 
             op: "update_node",
             id: "mcp-reader",
             changes: {
-              notes: "Gerçek HTTP MCP çağrısı kaydedildi.",
+              notes: "Saved through a real HTTP MCP call.",
               sources: [{ label: "React Flow", url: "https://reactflow.dev/" }],
             },
           },
@@ -197,27 +198,27 @@ test("shows real MCP writes in the reader and exports the saved content", async 
     await login(page);
     await page.goto(`/?diagram=${saved.id}`);
     await page
-      .getByText("Agentın eklediği adım", { exact: true })
+      .getByText("Step added by an agent", { exact: true })
       .first()
       .click();
     const details = page.getByRole("complementary", {
-      name: "Düğüm detayları",
+      name: "Node details",
     });
-    await expect(details).toContainText("Gerçek HTTP MCP çağrısı kaydedildi.");
+    await expect(details).toContainText("Saved through a real HTTP MCP call.");
     await expect(
       details.getByRole("link", { name: /React Flow/ }),
     ).toHaveAttribute("href", "https://reactflow.dev/");
-    await page.getByRole("button", { name: "Diyagram işlemleri" }).click();
+    await page.getByRole("button", { name: "Diagram actions" }).click();
     const downloadPromise = page.waitForEvent("download");
     await page
-      .getByRole("menuitem", { name: "JSON olarak dışa aktar" })
+      .getByRole("menuitem", { name: "Export as JSON" })
       .click();
     const download = await downloadPromise;
     const exported = JSON.parse(
       await readFile((await download.path())!, "utf8"),
     );
     expect(exported.diagram.document.nodes[0].notes).toBe(
-      "Gerçek HTTP MCP çağrısı kaydedildi.",
+      "Saved through a real HTTP MCP call.",
     );
     expect(exported.source.revision).toBe(2);
   } finally {
@@ -231,16 +232,16 @@ test("keeps a failed form and safely reconciles a lost save response after furth
   await login(page);
   await page.getByRole("button", { name: /Relay newsletter workflow/ }).click();
   await page
-    .getByRole("button", { name: "Collect ideas aşamasını aç" })
+    .getByRole("button", { name: "Open Collect ideas phase" })
     .click();
   await page.getByText("Collect questions", { exact: true }).first().click();
-  await page.getByRole("button", { name: "Düzenle", exact: true }).click();
-  await page.getByRole("button", { name: "Düğümü düzenle" }).click();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByRole("button", { name: "Edit node" }).click();
   const description = page.getByRole("textbox", {
-    name: "Açıklama",
+    name: "Description",
     exact: true,
   });
-  await description.fill("İlk kayıt sunucuda tamamlandı.");
+  await description.fill("The first save completed on the server.");
   await page.route(
     "**/api/diagrams/*",
     async (route) => {
@@ -251,35 +252,35 @@ test("keeps a failed form and safely reconciles a lost save response after furth
     { times: 1 },
   );
   await page
-    .getByRole("button", { name: "Düğümü kaydet", exact: true })
+    .getByRole("button", { name: "Save node", exact: true })
     .click();
   await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
-  await expect(description).toHaveValue("İlk kayıt sunucuda tamamlandı.");
-  await description.fill("Yanıt kaybolduktan sonra gözden geçirilen açıklama.");
+  await expect(description).toHaveValue("The first save completed on the server.");
+  await description.fill("Revised description after the response was lost.");
   await page
-    .getByRole("button", { name: "Düğümü kaydet", exact: true })
+    .getByRole("button", { name: "Save node", exact: true })
     .click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
-    "daha yeni bir sürümü",
+    "newer revision",
   );
   await page
-    .getByRole("button", { name: "Düğümü kaydet", exact: true })
+    .getByRole("button", { name: "Save node", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
-    page.getByRole("complementary", { name: "Düğüm detayları" }),
-  ).toContainText("Yanıt kaybolduktan sonra gözden geçirilen açıklama.");
+    page.getByRole("complementary", { name: "Node details" }),
+  ).toContainText("Revised description after the response was lost.");
 });
 
 test("retries an unacknowledged creation without duplicating the diagram", async ({
   page,
 }) => {
   await login(page);
-  const title = `Yanıtı kaybolan yeni diyagram ${Date.now()}`;
+  const title = `New diagram with a lost response ${Date.now()}`;
   await page
-    .getByRole("button", { name: "Yeni diyagram", exact: true })
+    .getByRole("button", { name: "New diagram", exact: true })
     .click();
-  const name = page.getByRole("textbox", { name: "Diyagram adı", exact: true });
+  const name = page.getByRole("textbox", { name: "Diagram name", exact: true });
   await name.fill(title);
   await page.route(
     "**/api/diagrams",
@@ -290,12 +291,12 @@ test("retries an unacknowledged creation without duplicating the diagram", async
     { times: 1 },
   );
   await page
-    .getByRole("button", { name: "Diyagramı oluştur", exact: true })
+    .getByRole("button", { name: "Create diagram", exact: true })
     .click();
   await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
   await expect(name).not.toBeEditable();
   await page
-    .getByRole("button", { name: "Diyagramı oluştur", exact: true })
+    .getByRole("button", { name: "Create diagram", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
@@ -320,14 +321,14 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
   const nodes = Array.from({ length: 6 }, (_, phase) => [
     {
       id: `phase-${phase}`,
-      label: `Büyük harita aşama ${phase + 1}`,
+      label: `Large map phase ${phase + 1}`,
       kind: "phase",
     },
     ...Array.from({ length: 24 }, (_, step) => ({
       id: `step-${phase}-${step}`,
       parentId: `phase-${phase}`,
-      label: `İncelenecek adım ${step + 1}`,
-      description: "Detayları açarak veya liste görünümünde okuyabilirsin.",
+      label: `Step to review ${step + 1}`,
+      description: "Read the details in the inspector or list view.",
     })),
   ]).flat();
   const edges = Array.from({ length: 6 }, (_, phase) => [
@@ -352,7 +353,7 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
       "idempotency-key": crypto.randomUUID(),
     },
     data: {
-      title: "150 düğümlü harita",
+      title: "150-node map",
       document: { schemaVersion: 1, nodes, edges },
     },
   });
@@ -362,7 +363,7 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
   await page.goto(`/?diagram=${saved.id}`);
   await expect(page.locator(".react-flow__node")).toHaveCount(6);
   await page
-    .getByRole("button", { name: "Büyük harita aşama 1 aşamasını aç" })
+    .getByRole("button", { name: "Open Large map phase 1 phase" })
     .click();
   await expect(page.locator(".react-flow__node")).toHaveCount(24);
   await expect(async () => {
@@ -370,12 +371,12 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
       (await page.locator(".react-flow__node").first().boundingBox())!.width,
     ).toBeGreaterThan(130);
   }).toPass({ timeout: 6000 });
-  await page.getByRole("button", { name: "Liste", exact: true }).click();
+  await page.getByRole("button", { name: "List", exact: true }).click();
   await expect(page.locator(".reading-row")).toHaveCount(24);
   await page
-    .getByRole("button", { name: /İncelenecek adım 24 Detayları/ })
+    .getByRole("button", { name: /Step to review 24 Read the details/ })
     .click();
   await expect(
-    page.getByRole("complementary", { name: "Düğüm detayları" }),
-  ).toContainText("İncelenecek adım 24");
+    page.getByRole("complementary", { name: "Node details" }),
+  ).toContainText("Step to review 24");
 });

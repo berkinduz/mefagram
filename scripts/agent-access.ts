@@ -34,7 +34,7 @@ export async function connectAgent() {
     )
   )
     throw new Error("Agent credentials require HTTPS except on localhost.");
-  const client = new Client({ name: "mefagram-cli", version: "0.1.1" });
+  const client = new Client({ name: "mefagram-cli", version: "0.1.2" });
   await client.connect(
     new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`), {
       requestInit: { headers: { authorization: `Bearer ${token}` } },

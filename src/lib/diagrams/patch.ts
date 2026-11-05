@@ -64,7 +64,7 @@ export function applyPatch(
         if (next.document.nodes.some((node) => node.id === operation.node.id))
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Düğüm zaten var: ${operation.node.id}`,
+            `Node already exists: ${operation.node.id}`,
           );
         next.document.nodes.push(operation.node);
         break;
@@ -75,7 +75,7 @@ export function applyPatch(
         if (!node)
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Düğüm bulunamadı: ${operation.id}`,
+            `Node not found: ${operation.id}`,
           );
         Object.assign(node, operation.changes);
         break;
@@ -84,7 +84,7 @@ export function applyPatch(
         if (!next.document.nodes.some((node) => node.id === operation.id))
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Düğüm bulunamadı: ${operation.id}`,
+            `Node not found: ${operation.id}`,
           );
         const removed = new Set([operation.id]);
         if (operation.cascade) {
@@ -110,7 +110,7 @@ export function applyPatch(
         ) {
           throw new DiagramError(
             "VALIDATION_ERROR",
-            "Düğümün alt adımları veya bağlantıları var. Silmek için cascade: true kullanın.",
+            "This node has child steps or connections. Use cascade: true to remove it.",
           );
         }
         next.document.nodes = next.document.nodes.filter(
@@ -125,7 +125,7 @@ export function applyPatch(
         if (next.document.edges.some((edge) => edge.id === operation.edge.id))
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Bağlantı zaten var: ${operation.edge.id}`,
+            `Connection already exists: ${operation.edge.id}`,
           );
         next.document.edges.push(operation.edge);
         break;
@@ -136,7 +136,7 @@ export function applyPatch(
         if (!edge)
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Bağlantı bulunamadı: ${operation.id}`,
+            `Connection not found: ${operation.id}`,
           );
         Object.assign(edge, operation.changes);
         break;
@@ -145,7 +145,7 @@ export function applyPatch(
         if (!next.document.edges.some((edge) => edge.id === operation.id))
           throw new DiagramError(
             "VALIDATION_ERROR",
-            `Bağlantı bulunamadı: ${operation.id}`,
+            `Connection not found: ${operation.id}`,
           );
         next.document.edges = next.document.edges.filter(
           (edge) => edge.id !== operation.id,

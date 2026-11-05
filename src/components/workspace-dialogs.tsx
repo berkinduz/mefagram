@@ -53,7 +53,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
           setError(
             failure instanceof Error
               ? failure.message
-              : "Bağlantılar açılamadı.",
+              : "Could not load connections.",
           ),
         ),
     [],
@@ -66,37 +66,37 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
       await navigator.clipboard.writeText(value);
       setCopied(which);
     } catch {
-      setError("Panoya kopyalanamadı. Alanı seçerek kopyalayabilirsin.");
+      setError("Could not copy to the clipboard. Select the field to copy it manually.");
     }
   }
   return (
     <Dialog
-      title="Agent bağlantıları"
-      description="Codex ve Dot, bu çalışma alanını MCP araçlarıyla okuyup güncelleyebilir."
+      title="Agent connections"
+      description="Your agents can read and update this workspace using MCP tools."
       onClose={onClose}
       wide
     >
       <div className="dialog-form">
         <div className="connection-endpoint">
           <div className="section-row">
-            <h3>MCP adresi</h3>
+            <h3>MCP endpoint</h3>
             <button
               className="text-button"
               onClick={() => copy(endpoint, "endpoint")}
             >
               {copied === "endpoint" ? <Check size={14} /> : <Copy size={14} />}
-              Kopyala
+              Copy
             </button>
           </div>
-          <input readOnly aria-label="MCP adresi" value={endpoint} />
+          <input readOnly aria-label="MCP endpoint" value={endpoint} />
           <p className="field-help">
             {local
-              ? "Bu adres bu bilgisayarda çalışır. Dot’un buluttan erişebilmesi için uygulamanın erişilebilir bir sunucuda çalışması gerekir."
-              : "OAuth destekleyen agentında bu adresle bağlantı başlat. Erişim iznini kendi hesabınla ver."}
+              ? "This address works on this computer. Cloud agents need the app to run on a reachable server."
+              : "Connect to this endpoint from an OAuth-compatible agent. Authorize access with your account."}
           </p>
         </div>
         <div className="section-row connection-heading">
-          <h3>Kişisel erişim anahtarları</h3>
+          <h3>Personal access tokens</h3>
           <button
             className="button small"
             onClick={() => {
@@ -105,12 +105,11 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
             }}
           >
             <Plus size={14} />
-            Anahtar oluştur
+            Create token
           </button>
         </div>
         <p className="field-help">
-          Bearer token destekleyen agentlar için. Anahtarlar yalnızca
-          diyagramlarına erişir.
+          For agents that support bearer tokens. Tokens only grant access to your diagrams.
         </p>
         {creating && (
           <form
@@ -138,7 +137,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                 setError(
                   failure instanceof Error
                     ? failure.message
-                    : "Anahtar oluşturulamadı.",
+                    : "Could not create the token.",
                 );
               } finally {
                 setBusy(false);
@@ -147,7 +146,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
           >
             <div className="form-two">
               <label>
-                Bağlantı adı
+                Connection name
                 <input
                   value={name}
                   onChange={(event) => setName(event.target.value)}
@@ -156,20 +155,20 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                 />
               </label>
               <label>
-                İzin
+                Permission
                 <select
                   value={permission}
                   onChange={(event) => setPermission(event.target.value)}
                 >
-                  <option value="read">Yalnızca okuma</option>
-                  <option value="write">Okuma ve düzenleme</option>
+                  <option value="read">Read only</option>
+                  <option value="write">Read and edit</option>
                 </select>
               </label>
             </div>
             <div className="dialog-actions">
-              <span className="field-help">30 gün geçerli.</span>
+              <span className="field-help">Valid for 30 days.</span>
               <button className="button primary" disabled={busy}>
-                Erişim anahtarını oluştur
+                Create access token
               </button>
             </div>
           </form>
@@ -178,13 +177,13 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
           <div className="new-token">
             <strong>
               <KeyRound size={16} />
-              Anahtarını şimdi kaydet
+              Save your token now
             </strong>
-            <p>Bu değer daha sonra yeniden gösterilmez.</p>
+            <p>This value will not be shown again.</p>
             <div className="copy-field">
               <input
                 readOnly
-                aria-label="Yeni erişim anahtarı"
+                aria-label="New access token"
                 value={newToken}
               />
               <button
@@ -192,7 +191,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                 onClick={() => copy(newToken, "token")}
               >
                 {copied === "token" ? <Check size={15} /> : <Copy size={15} />}
-                Kopyala
+                Copy
               </button>
             </div>
           </div>
@@ -208,16 +207,16 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                 <strong>{token.name}</strong>
                 <span>
                   {token.revoked
-                    ? "İptal edildi"
-                    : `${token.scopes.includes("diagrams:write") ? "Okuma ve düzenleme" : "Yalnızca okuma"} · ${new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium" }).format(new Date(token.expiresAt))} tarihine kadar`}
+                    ? "Revoked"
+                    : `${token.scopes.includes("diagrams:write") ? "Read and edit" : "Read only"} · Expires ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(token.expiresAt))}`}
                 </span>
               </div>
               {!token.revoked && (
                 <button
                   className="icon-button danger"
                   disabled={busy}
-                  aria-label={`${token.name} anahtarını iptal et`}
-                  title="Erişimi iptal et"
+                  aria-label={`Revoke ${token.name} token`}
+                  title="Revoke access"
                   onClick={async () => {
                     setBusy(true);
                     try {
@@ -229,7 +228,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
                       setError(
                         failure instanceof Error
                           ? failure.message
-                          : "Erişim iptal edilemedi.",
+                          : "Could not revoke access.",
                       );
                     } finally {
                       setBusy(false);
@@ -245,7 +244,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
         <FormError error={error} />
         <p className="connection-privacy">
           <ShieldCheck size={16} />
-          Anahtarını kaynak koduna veya diyagram notlarına ekleme.
+          Keep your token out of source code and diagram notes.
         </p>
       </div>
     </Dialog>
@@ -271,8 +270,8 @@ export function HistoryDialog({
   }, [record.id, record.revision]);
   return (
     <Dialog
-      title="Sürüm geçmişi"
-      description="Her kayıt bir sürüm oluşturur. Önceki bir sürümü geri yüklemek mevcut geçmişi korur."
+      title="Revision history"
+      description="Every save creates a revision. Restoring an earlier revision preserves the existing history."
       onClose={onClose}
     >
       <div className="dialog-form">
@@ -286,23 +285,23 @@ export function HistoryDialog({
                   {item.actor === "mcp"
                     ? "Agent"
                     : item.actor === "setup"
-                      ? "Başlangıç haritası"
-                      : "Sen"}
+                      ? "Starter map"
+                      : "You"}
                   <span className="history-separator" />
-                  {new Intl.DateTimeFormat("tr-TR", {
+                  {new Intl.DateTimeFormat("en", {
                     dateStyle: "medium",
                     timeStyle: "short",
                   }).format(new Date(item.createdAt))}
                 </small>
               </div>
               {item.revision === record.revision ? (
-                <span className="current-revision">Güncel</span>
+                <span className="current-revision">Current</span>
               ) : (
                 <button
                   className="icon-button"
                   disabled={busy}
-                  aria-label={`Sürüm ${item.revision} geri yükle`}
-                  title="Bu sürümü geri yükle"
+                  aria-label={`Restore revision ${item.revision}`}
+                  title="Restore this revision"
                   onClick={async () => {
                     setBusy(true);
                     setError("");
@@ -313,7 +312,7 @@ export function HistoryDialog({
                       setError(
                         failure instanceof Error
                           ? failure.message
-                          : "Sürüm geri yüklenemedi.",
+                          : "Could not restore the revision.",
                       );
                     } finally {
                       setBusy(false);

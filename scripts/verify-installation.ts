@@ -169,11 +169,11 @@ async function browserRead(
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(`${baseURL}/sign-in`);
-    await page.getByLabel("E-posta").fill(access.email);
-    await page.getByLabel("Parola", { exact: true }).fill(access.password);
-    await page.getByRole("button", { name: "Çalışma alanını aç" }).click();
+    await page.getByLabel("Email").fill(access.email);
+    await page.getByLabel("Password", { exact: true }).fill(access.password);
+    await page.getByRole("button", { name: "Open workspace" }).click();
     await page
-      .getByRole("navigation", { name: "Diyagram koleksiyonu" })
+      .getByRole("navigation", { name: "Diagram collection" })
       .waitFor();
     await page.goto(`${baseURL}/?diagram=${record.id}`);
     await page
@@ -181,7 +181,7 @@ async function browserRead(
       .first()
       .click();
     await page
-      .getByRole("complementary", { name: "Düğüm detayları" })
+      .getByRole("complementary", { name: "Node details" })
       .getByText(record.document.nodes[0].notes!, { exact: true })
       .waitFor();
     await page.screenshot({ path: join(evidence, screenshot) });
@@ -216,7 +216,12 @@ try {
   const auth=createAuth(db,{baseURL:access.baseURL,ownerEmail:access.email,secret:config.BETTER_AUTH_SECRET,setupKey:config.MEFAGRAM_SETUP_KEY});
   assert.equal((await auth.api.signInEmail({body:{email:access.email,password:access.password}})).user.id,owner.id);
   const diagrams=await service.list(owner.id);
-  const snapshot={owner,diagrams:await Promise.all(diagrams.map(async d=>({record:await service.get(owner.id,d.id),history:await service.revisions(owner.id,d.id)}))),credentialHash:createHash('sha256').update(JSON.stringify(access)).digest('hex'),secretHash:createHash('sha256').update(config.BETTER_AUTH_SECRET+config.MEFAGRAM_SETUP_KEY).digest('hex')};
+  // Compare stored history, including content, rather than localized read-time summaries.
+  const storedDiagrams=await Promise.all(diagrams.map(async d=>({
+    record:await service.get(owner.id,d.id),
+    history:(await db.query('SELECT revision,created_at::text AS "createdAt",content,actor,summary FROM diagram_revisions WHERE diagram_id = $1 ORDER BY revision DESC',[d.id])).rows
+  })));
+  const snapshot={owner,diagrams:storedDiagrams,credentialHash:createHash('sha256').update(JSON.stringify(access)).digest('hex'),secretHash:createHash('sha256').update(config.BETTER_AUTH_SECRET+config.MEFAGRAM_SETUP_KEY).digest('hex')};
   if(process.argv[2]==='prepare') await writeFile('.mefagram/upgrade-snapshot.json',JSON.stringify(snapshot));
   else assert.deepEqual(snapshot,JSON.parse(await readFile('.mefagram/upgrade-snapshot.json','utf8')));
   console.log('Owner, login, token, diagrams, history and secrets verified.');

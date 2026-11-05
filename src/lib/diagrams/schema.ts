@@ -4,7 +4,7 @@ import { MAX_DIAGRAM_BYTES } from "./limits";
 
 export const idSchema = z
   .string()
-  .regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/, "Geçersiz kimlik.");
+  .regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}$/, "Invalid ID.");
 export const tagSchema = z.string().trim().min(1).max(40);
 export const sourceSchema = z
   .object({
@@ -14,7 +14,7 @@ export const sourceSchema = z
       .max(2048)
       .refine(
         (value) => ["https:", "http:"].includes(new URL(value).protocol),
-        "Yalnızca http ve https bağlantıları kullanılabilir.",
+        "Only http and https URLs are allowed.",
       ),
   })
   .strict();
@@ -59,7 +59,7 @@ export const documentSchema = z
       if (ids.has(node.id))
         context.addIssue({
           code: "custom",
-          message: `Tekrarlanan düğüm: ${node.id}`,
+          message: `Duplicate node: ${node.id}`,
         });
       ids.add(node.id);
     }
@@ -71,14 +71,14 @@ export const documentSchema = z
         if (!byId.has(parent)) {
           context.addIssue({
             code: "custom",
-            message: `Üst düğüm bulunamadı: ${parent}`,
+            message: `Parent node not found: ${parent}`,
           });
           break;
         }
         if (ancestors.has(parent)) {
           context.addIssue({
             code: "custom",
-            message: "Düğüm hiyerarşisi döngü içeremez.",
+            message: "The node hierarchy cannot contain cycles.",
           });
           break;
         }
@@ -86,7 +86,7 @@ export const documentSchema = z
         if (ancestors.size > 12) {
           context.addIssue({
             code: "custom",
-            message: "Hiyerarşi en fazla 12 seviye olabilir.",
+            message: "The hierarchy cannot exceed 12 levels.",
           });
           break;
         }
@@ -98,13 +98,13 @@ export const documentSchema = z
       if (edgeIds.has(edge.id))
         context.addIssue({
           code: "custom",
-          message: `Tekrarlanan bağlantı: ${edge.id}`,
+          message: `Duplicate connection: ${edge.id}`,
         });
       edgeIds.add(edge.id);
       if (!ids.has(edge.source) || !ids.has(edge.target))
         context.addIssue({
           code: "custom",
-          message: `Bağlantının düğümü bulunamadı: ${edge.id}`,
+          message: `Connection endpoint not found: ${edge.id}`,
         });
     }
   });
@@ -198,7 +198,7 @@ export function validated<T extends z.ZodType>(
   )
     throw new DiagramError(
       "VALIDATION_ERROR",
-      "Diyagram 2 MB sınırını aşıyor.",
+      "The diagram exceeds the 2 MB limit.",
     );
   return parsed.data;
 }

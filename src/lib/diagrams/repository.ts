@@ -79,7 +79,7 @@ export class DiagramRepository {
       [ownerId, id],
     );
     if (!result.rows[0])
-      throw new DiagramError("NOT_FOUND", "Diyagram bulunamadı.", 404);
+      throw new DiagramError("NOT_FOUND", "Diagram not found.", 404);
     return recordFromRow(result.rows[0]);
   }
 
@@ -130,7 +130,7 @@ export class DiagramRepository {
       await this.get(ownerId, id, transaction);
       throw new DiagramError(
         "REVISION_CONFLICT",
-        "Bu diyagram başka bir yerde güncellendi. Son sürümü açıp değişikliği yeniden uygulayın.",
+        "This diagram was updated elsewhere. Open the latest revision and reapply your change.",
         409,
       );
     }
@@ -183,7 +183,7 @@ export class DiagramRepository {
       [ownerId, id, revision],
     );
     if (!result.rows[0])
-      throw new DiagramError("NOT_FOUND", "İstenen sürüm bulunamadı.", 404);
+      throw new DiagramError("NOT_FOUND", "The requested revision was not found.", 404);
     return result.rows[0].content as DiagramContent & { archived: boolean };
   }
 }

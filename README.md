@@ -38,6 +38,4 @@ Try asking: **“Map our onboarding process, including handoffs, decisions and s
 
 Local data persists on disk. Remote agents need a reachable HTTPS installation. See the [agent guide](docs/agent-integration.md) for tools, authentication and update examples.
 
-[Install & backup](docs/installation.md) · [Hosting](docs/deployment.md) · [Contribute](CONTRIBUTING.md) · [Türkçe](docs/README.tr.md)
-
-The interface is currently Turkish; diagrams can use any language.
+[Install & backup](docs/installation.md) · [Hosting](docs/deployment.md) · [Contribute](CONTRIBUTING.md)

@@ -6,23 +6,23 @@ import { createDatabase } from "@/lib/db";
 import { DiagramService } from "@/lib/diagrams/service";
 
 const fixture = {
-  title: "Örnek çalışma haritası",
-  description: "Bir süreç haritası",
-  tags: ["stüdyo"],
+  title: "Example workflow map",
+  description: "A process map",
+  tags: ["studio"],
   document: {
     schemaVersion: 1 as const,
     nodes: [
       {
         id: "research",
-        label: "Araştırma",
+        label: "Research",
         kind: "phase" as const,
-        description: "Fikri araştır",
+        description: "Research the idea",
         notes: "",
         sources: [],
       },
       {
         id: "release",
-        label: "Yayın",
+        label: "Release",
         kind: "phase" as const,
         description: "",
         notes: "",
@@ -35,7 +35,7 @@ const fixture = {
         source: "research",
         target: "release",
         kind: "flow" as const,
-        label: "Doğrulandı",
+        label: "Validated",
       },
     ],
   },
@@ -106,7 +106,7 @@ describe("persistent diagram operations", () => {
   test("saves a graph and lets the owner find it by a node description", async () => {
     const saved = await service.create("owner-find", fixture, "create-find");
     expect(saved.revision).toBe(1);
-    const found = await service.list("owner-find", { search: "Fikri araştır" });
+    const found = await service.list("owner-find", { search: "Research the idea" });
     expect(found.map((item) => item.id)).toContain(saved.id);
     const loaded = await service.get("owner-find", saved.id);
     expect(loaded.document.edges).toEqual([
@@ -115,7 +115,7 @@ describe("persistent diagram operations", () => {
         source: "research",
         target: "release",
         kind: "flow",
-        label: "Doğrulandı",
+        label: "Validated",
       },
     ]);
   });
@@ -238,16 +238,16 @@ describe("persistent diagram operations", () => {
         {
           op: "update_node",
           id: "research",
-          changes: { notes: "Görüşme notları" },
+          changes: { notes: "Interview notes" },
         },
       ],
       "history-update",
     );
     expect(changed.revision).toBe(2);
     expect(changed.document.nodes[0]).toMatchObject({
-      label: "Araştırma",
-      description: "Fikri araştır",
-      notes: "Görüşme notları",
+      label: "Research",
+      description: "Research the idea",
+      notes: "Interview notes",
     });
     expect(changed.document.edges).toHaveLength(1);
     const history = await service.revisions("history-owner", saved.id);
@@ -263,6 +263,45 @@ describe("persistent diagram operations", () => {
     expect(restored.document.nodes[0].notes).toBe("");
   });
 
+  test("presents legacy system summaries in English without rewriting saved history", async () => {
+    // These are exact system-generated summaries from releases before v0.1.2.
+    const cases = [
+      ["Diyagram oluşturuldu", "Diagram created"],
+      ["Diyagram bilgileri güncellendi", "Diagram details updated"],
+      ["Düğüm eklendi", "Node added"],
+      ["Düğüm güncellendi", "Node updated"],
+      ["Düğüm silindi", "Node removed"],
+      ["Bağlantı eklendi", "Connection added"],
+      ["Bağlantı güncellendi", "Connection updated"],
+      ["Bağlantı silindi", "Connection removed"],
+      ["2 değişiklik uygulandı", "2 changes applied"],
+      ["Sürüm 12 geri yüklendi", "Restored revision 12"],
+      ["Custom migration note", "Custom migration note"],
+    ];
+    for (const [index, [summary, expected]] of cases.entries()) {
+      const saved = await service.create(
+        "legacy-summary-owner",
+        fixture,
+        `legacy-summary-${index}`,
+      );
+      await db.query(
+        "UPDATE diagram_revisions SET summary = $1 WHERE diagram_id = $2",
+        [summary, saved.id],
+      );
+      const rawHistory = () =>
+        db.query(
+          "SELECT * FROM diagram_revisions WHERE diagram_id = $1",
+          [saved.id],
+        );
+      const before = (await rawHistory()).rows;
+      expect(
+        await service.revisions("legacy-summary-owner", saved.id),
+      ).toMatchObject([{ revision: 1, summary: expected }]);
+      expect((await rawHistory()).rows).toEqual(before);
+      expect(await service.get("legacy-summary-owner", saved.id)).toEqual(saved);
+    }
+  });
+
   test("rejects a stale edit and allows only one of two concurrent writers", async () => {
     const saved = await service.create("race-owner", fixture, "race-create");
     const results = await Promise.allSettled([
@@ -270,14 +309,14 @@ describe("persistent diagram operations", () => {
         "race-owner",
         saved.id,
         1,
-        [{ op: "update_metadata", changes: { title: "Birinci" } }],
+        [{ op: "update_metadata", changes: { title: "First" } }],
         "race-one",
       ),
       service.patch(
         "race-owner",
         saved.id,
         1,
-        [{ op: "update_metadata", changes: { title: "İkinci" } }],
+        [{ op: "update_metadata", changes: { title: "Second" } }],
         "race-two",
       ),
     ]);
@@ -298,7 +337,7 @@ describe("persistent diagram operations", () => {
     expect(retry.id).toBe(first.id);
     expect(await service.list("retry-owner", {})).toHaveLength(1);
     const operations = [
-      { op: "update_metadata" as const, changes: { title: "Yeni başlık" } },
+      { op: "update_metadata" as const, changes: { title: "New title" } },
     ];
     const update = await service.patch(
       "retry-owner",
@@ -351,7 +390,7 @@ describe("persistent diagram operations", () => {
       ),
     ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
     const unchanged = await service.get("atomic-owner", saved.id);
-    expect(unchanged.title).toBe("Örnek çalışma haritası");
+    expect(unchanged.title).toBe("Example workflow map");
     expect(unchanged.revision).toBe(1);
     expect(await service.revisions("atomic-owner", saved.id)).toHaveLength(1);
   });
@@ -369,7 +408,7 @@ describe("persistent diagram operations", () => {
               source: "release",
               target: "research",
               kind: "feedback",
-              label: "Öğren",
+              label: "Learn",
             },
           ],
         },
@@ -381,13 +420,13 @@ describe("persistent diagram operations", () => {
       saved.id,
       1,
       [
-        { op: "update_metadata", changes: { title: "Başlık değişti" } },
-        { op: "update_edge", id: "loop", changes: { label: "Yeniden öğren" } },
+        { op: "update_metadata", changes: { title: "Title changed" } },
+        { op: "update_edge", id: "loop", changes: { label: "Learn again" } },
       ],
       "partial-update",
     );
-    expect(updated.description).toBe("Bir süreç haritası");
-    expect(updated.tags).toEqual(["stüdyo"]);
+    expect(updated.description).toBe("A process map");
+    expect(updated.tags).toEqual(["studio"]);
     expect(updated.document.edges[0].kind).toBe("feedback");
   });
 
@@ -409,7 +448,7 @@ describe("persistent diagram operations", () => {
       "research",
       "release",
     ]);
-    expect(imported.document.edges[0].label).toBe("Doğrulandı");
+    expect(imported.document.edges[0].label).toBe("Validated");
   });
 
   test("can move a child to the top level and clear a manual position explicitly", async () => {
@@ -446,7 +485,7 @@ describe("persistent diagram operations", () => {
     );
     expect(moved.document.nodes[1].parentId).toBeNull();
     expect(moved.document.nodes[1].position).toBeNull();
-    expect(moved.document.nodes[1].label).toBe("Yayın");
+    expect(moved.document.nodes[1].label).toBe("Release");
   });
 });
 
@@ -465,8 +504,8 @@ test("retains saved content after closing and reopening the filesystem database"
       "restart-owner",
       saved.id,
     );
-    expect(reopened.title).toBe("Örnek çalışma haritası");
-    expect(reopened.document.nodes[0].description).toBe("Fikri araştır");
+    expect(reopened.title).toBe("Example workflow map");
+    expect(reopened.document.nodes[0].description).toBe("Research the idea");
     expect(reopened.revision).toBe(1);
   } finally {
     await database.close();

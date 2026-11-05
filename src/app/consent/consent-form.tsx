@@ -33,13 +33,13 @@ export function ConsentForm({
       const result = await response.json();
       if (!response.ok || !result.url) {
         setError(
-          "Bağlantı isteği geçersiz veya süresi dolmuş. Agentından yeni bir bağlantı isteği başlat.",
+          "This connection request is invalid or expired. Start a new request from your agent.",
         );
         return;
       }
       window.location.assign(result.url);
     } catch {
-      setError("Bağlantı tamamlanamadı. Yeniden dene.");
+      setError("Could not complete the connection. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -53,15 +53,14 @@ export function ConsentForm({
         <div className="private-icon">
           <PlugZap size={23} />
         </div>
-        <h1>Agentını bağla.</h1>
+        <h1>Connect your agent.</h1>
         <p>
-          <strong>{clientName}</strong>, Mefagram çalışma alanına erişmek
-          istiyor.
+          <strong>{clientName}</strong> wants to access your Mefagram workspace.
         </p>
         <ul className="permission-list">
           <li>
             <Check size={17} />
-            Diyagramlarını bulma ve okuma
+            Find and read your diagrams
           </li>
           {scopes.includes("diagrams:write") && (
             <li>
@@ -71,14 +70,14 @@ export function ConsentForm({
                   checked={write}
                   onChange={(event) => setWrite(event.target.checked)}
                 />
-                Düğüm, bağlantı ve notları düzenleme
+                Edit nodes, connections and notes
               </label>
             </li>
           )}
         </ul>
         <p className="consent-note">
           <ShieldCheck size={17} />
-          Agent yalnızca hesabının erişebildiği diyagramları kullanabilir.
+          The agent can only access diagrams available to your account.
         </p>
         {error && (
           <div role="alert" className="form-error">
@@ -91,14 +90,14 @@ export function ConsentForm({
             disabled={busy}
             onClick={() => consent(false)}
           >
-            İzin verme
+            Deny
           </button>
           <button
             className="button primary"
             disabled={busy}
             onClick={() => consent(true)}
           >
-            Bağlantıya izin ver
+            Allow connection
           </button>
         </div>
       </section>

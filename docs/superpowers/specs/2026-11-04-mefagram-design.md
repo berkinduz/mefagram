@@ -28,7 +28,7 @@ Vercel + Neon Free is a candidate, subject to free resource availability, accoun
 
 ## Product and visual direction
 
-The interface is a working atlas rather than a whiteboard: quiet collection navigation, a broad diagram viewport and a contextual inspector. Turkish product copy. Short node labels; long explanations and sources live in the inspector. Graph hierarchy and relation types drive overview/detail, filtering and focus.
+The interface is a working atlas rather than a whiteboard: quiet collection navigation, a broad diagram viewport and a contextual inspector. English product copy. Short node labels; long explanations and sources live in the inspector. Graph hierarchy and relation types drive overview/detail, filtering and focus.
 
 Palette: paper #f8fafc, ink #233044, slate #68758a, indigo #4054a5, mist #e8edf4, sage #3f7267. Manrope for interface text, Newsreader for document headings. No decorative gradients, marketing hero, animated connectors or dashboard KPI cards. Distinctive content is the lifecycle map itself. Use sequence markers only for actual ordered phases. The design is restrained to protect the user's attention on large maps.
 

@@ -27,7 +27,7 @@ export function errorResponse(
   );
   return json(
     {
-      error: "İşlem tamamlanamadı. Değişiklikleri koruyup yeniden deneyin.",
+      error: "Could not complete the request. Keep your changes and try again.",
       code: "INTERNAL_ERROR",
     },
     500,
@@ -40,7 +40,7 @@ export async function readBody(
 ): Promise<Uint8Array> {
   const reader = request.body?.getReader();
   if (!reader)
-    throw new DiagramError("VALIDATION_ERROR", "İstek içeriği eksik.");
+    throw new DiagramError("VALIDATION_ERROR", "The request body is missing.");
   const chunks: Uint8Array[] = [];
   let size = 0;
   try {
@@ -52,7 +52,7 @@ export async function readBody(
         await reader.cancel();
         throw new DiagramError(
           "PAYLOAD_TOO_LARGE",
-          "İstek aktarım boyutu sınırını aşıyor.",
+          "The request exceeds the transfer size limit.",
           413,
         );
       }
@@ -76,7 +76,7 @@ export async function readJson(request: Request): Promise<unknown> {
   } catch {
     throw new DiagramError(
       "VALIDATION_ERROR",
-      "Geçerli bir JSON dosyası veya istek gönderin.",
+      "Send a valid JSON file or request.",
     );
   }
 }

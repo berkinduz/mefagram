@@ -22,7 +22,7 @@ export async function resolveIdentity(
   if (authorization) {
     const token = /^Bearer ([^\s]+)$/i.exec(authorization)?.[1];
     if (!token)
-      throw new DiagramError("UNAUTHORIZED", "Geçersiz erişim anahtarı.", 401);
+      throw new DiagramError("UNAUTHORIZED", "Invalid access token.", 401);
     if (token.startsWith("mfg_")) {
       identity = await new PersonalTokenService(database).verify(token);
     } else {
@@ -52,7 +52,7 @@ export async function resolveIdentity(
       } catch {
         throw new DiagramError(
           "UNAUTHORIZED",
-          "Agent bağlantısının süresi dolmuş veya bağlantı geçersiz.",
+          "This agent connection is invalid or expired.",
           401,
         );
       }
@@ -66,7 +66,7 @@ export async function resolveIdentity(
       )
         throw new DiagramError(
           "FORBIDDEN",
-          "İstek bu çalışma alanından gelmelidir.",
+          "The request must originate from this workspace.",
           403,
         );
       identity = {
@@ -79,13 +79,13 @@ export async function resolveIdentity(
   if (!identity)
     throw new DiagramError(
       "UNAUTHORIZED",
-      "Bu çalışma alanına erişmek için oturum açın.",
+      "Sign in to access this workspace.",
       401,
     );
   if (!identity.scopes.includes(requiredScope))
     throw new DiagramError(
       "INSUFFICIENT_SCOPE",
-      "Bu bağlantıya düzenleme izni verilmemiş.",
+      "This connection does not have edit permission.",
       403,
     );
   return identity;

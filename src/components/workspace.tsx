@@ -50,7 +50,7 @@ const DiagramCanvas = dynamic(() => import("./diagram-canvas"), {
   loading: () => (
     <div className="canvas-loading">
       <LoaderCircle className="spin" size={22} />
-      <span>Harita açılıyor…</span>
+      <span>Opening map…</span>
     </div>
   ),
 });
@@ -100,7 +100,7 @@ export function Workspace({
     (failure: unknown) =>
       setNotice({
         text:
-          failure instanceof Error ? failure.message : "İşlem tamamlanamadı.",
+          failure instanceof Error ? failure.message : "Could not complete the request.",
         error: true,
       }),
     [],
@@ -216,7 +216,7 @@ export function Workspace({
           next.revision > (currentRecord.current?.revision ?? 0)
         ) {
           if (acceptRecord(next, navigation))
-            setNotice({ text: "Agentın kaydettiği yeni sürüm açıldı." });
+            setNotice({ text: "Opened the new revision saved by your agent." });
           await refreshCollection();
         }
       } catch {
@@ -250,12 +250,12 @@ export function Workspace({
   const savePatch = useCallback(
     async (operations: DiagramOperation[], mutationId: string) => {
       const current = currentRecord.current;
-      if (!current) throw new Error("Önce bir diyagram aç.");
+      if (!current) throw new Error("Open a diagram first.");
       if (current.id !== activeId.current)
-        throw new Error("Diyagram açılıyor. Tamamlanınca yeniden dene.");
+        throw new Error("The diagram is opening. Try again when it is ready.");
       const navigation = navigationVersion.current;
       if (savingNow.current)
-        throw new Error("Önceki kayıt sürüyor. Tamamlanınca yeniden dene.");
+        throw new Error("A save is in progress. Try again when it is complete.");
       savingNow.current = true;
       setSaving(true);
       try {
@@ -265,10 +265,10 @@ export function Workspace({
           mutationId,
         });
         if (acceptRecord(next, navigation))
-          setNotice({ text: "Değişiklikler kaydedildi." });
+          setNotice({ text: "Changes saved." });
         void refreshCollection().catch(() =>
           setNotice({
-            text: "Harita kaydedildi. Koleksiyon listesini yenileyebilirsin.",
+            text: "Map saved. Refresh the collection to update the list.",
             error: true,
           }),
         );
@@ -356,7 +356,7 @@ export function Workspace({
     setArchived(false);
     window.history.replaceState(null, "", `/?diagram=${next.id}`);
     await refreshCollection("", false).catch(() => {});
-    setNotice({ text: "Diyagram kaydedildi." });
+    setNotice({ text: "Diagram saved." });
   }
   async function createRecord(
     path: string,
@@ -382,7 +382,7 @@ export function Workspace({
       );
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${record.title.toLocaleLowerCase("tr-TR").replace(/[^a-z0-9ığüşöç]+/g, "-")}.mefagram.json`;
+      anchor.download = `${record.title.toLowerCase().replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")}.mefagram.json`;
       anchor.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (failure) {
@@ -432,19 +432,19 @@ export function Workspace({
             <header className="document-header">
               <div className="document-breadcrumb">
                 <BookOpen size={14} />
-                <span>Diyagramlar</span>
+                <span>Diagrams</span>
                 <ChevronRight size={13} />
-                <span>{record.tags[0] ?? "Çalışma haritası"}</span>
+                <span>{record.tags[0] ?? "Workflow map"}</span>
                 <div className="header-save-status" role="status">
                   {saving ? (
                     <>
                       <LoaderCircle className="spin" size={13} />
-                      Kaydediliyor
+                      Saving
                     </>
                   ) : (
                     <>
                       <Check size={13} />
-                      Kaydedildi
+                      Saved
                     </>
                   )}
                 </div>
@@ -460,13 +460,13 @@ export function Workspace({
                     onClick={() => setEditing(!editing)}
                   >
                     {editing ? <Eye size={14} /> : <Pencil size={14} />}
-                    <span>{editing ? "Okumaya dön" : "Düzenle"}</span>
+                    <span>{editing ? "Back to reading" : "Edit"}</span>
                   </button>
                   <div className="diagram-menu">
                     <button
                       className="icon-button"
                       onClick={() => setMenu(!menu)}
-                      aria-label="Diyagram işlemleri"
+                      aria-label="Diagram actions"
                       aria-expanded={menu}
                     >
                       <MoreHorizontal size={20} />
@@ -481,7 +481,7 @@ export function Workspace({
                           }}
                         >
                           <FilePenLine size={15} />
-                          Diyagram bilgileri
+                          Diagram details
                         </button>
                         <button
                           role="menuitem"
@@ -491,7 +491,7 @@ export function Workspace({
                           }}
                         >
                           <History size={15} />
-                          Sürüm geçmişi
+                          Revision history
                         </button>
                         <button
                           role="menuitem"
@@ -501,7 +501,7 @@ export function Workspace({
                           }}
                         >
                           <Download size={15} />
-                          JSON olarak dışa aktar
+                          Export as JSON
                         </button>
                         <button
                           role="menuitem"
@@ -523,7 +523,7 @@ export function Workspace({
                           }}
                         >
                           <Archive size={15} />
-                          {record.archived ? "Arşivden çıkar" : "Arşive taşı"}
+                          {record.archived ? "Unarchive" : "Archive"}
                         </button>
                       </div>
                     )}
@@ -533,20 +533,26 @@ export function Workspace({
               <div className="document-meta">
                 <span className="diagram-type">
                   <GitBranch size={13} />
-                  Çalışma haritası
+                  Workflow map
                 </span>
-                <span>{record.document.nodes.length} düğüm</span>
-                <span>{record.document.edges.length} bağlantı</span>
-                {record.tags.includes("Başlangıç taslağı") && (
-                  <span className="draft-label">Başlangıç taslağı</span>
+                <span>
+                  {record.document.nodes.length}{" "}
+                  {record.document.nodes.length === 1 ? "node" : "nodes"}
+                </span>
+                <span>
+                  {record.document.edges.length}{" "}
+                  {record.document.edges.length === 1 ? "connection" : "connections"}
+                </span>
+                {record.tags.includes("Starter draft") && (
+                  <span className="draft-label">Starter draft</span>
                 )}
                 {record.archived && (
-                  <span className="draft-label">Arşivde</span>
+                  <span className="draft-label">Archived</span>
                 )}
               </div>
             </header>
             <div className="workspace-content">
-              <section className="map-workspace" aria-label="Diyagram görünümü">
+              <section className="map-workspace" aria-label="Diagram view">
                 <div className="map-toolbar">
                   <div className="view-tabs">
                     <button
@@ -554,28 +560,28 @@ export function Workspace({
                       onClick={() => setView("map")}
                     >
                       <LayoutGrid size={14} />
-                      Harita
+                      Map
                     </button>
                     <button
                       className={view === "list" ? "active" : ""}
                       onClick={() => setView("list")}
                     >
                       <List size={15} />
-                      Liste
+                      List
                     </button>
                   </div>
                   <div className="map-search">
                     <Search size={15} />
                     <input
-                      aria-label="Haritada ara"
+                      aria-label="Search map"
                       value={nodeQuery}
                       onChange={(event) => setNodeQuery(event.target.value)}
-                      placeholder="Haritada ara"
+                      placeholder="Search map"
                     />
                     {nodeQuery && (
                       <button
                         className="icon-button"
-                        aria-label="Düğüm aramasını temizle"
+                        aria-label="Clear node search"
                         onClick={() => setNodeQuery("")}
                       >
                         <X size={13} />
@@ -585,7 +591,7 @@ export function Workspace({
                       <div
                         className="node-search-results"
                         role="listbox"
-                        aria-label="Düğüm arama sonuçları"
+                        aria-label="Node search results"
                       >
                         {results.map((node) => (
                           <button
@@ -602,20 +608,20 @@ export function Workspace({
                                   ? record.document.nodes.find(
                                       (parent) => parent.id === node.parentId,
                                     )?.label
-                                  : "Genel harita"}
+                                  : "Overview"}
                               </small>
                             </span>
                             <ArrowUpRight size={13} />
                           </button>
                         ))}
-                        {!results.length && <p>Eşleşen düğüm yok.</p>}
+                        {!results.length && <p>No matching nodes.</p>}
                       </div>
                     )}
                   </div>
                   <button
                     className="icon-button refresh-button"
-                    title="Son kaydı aç"
-                    aria-label="Diyagramı yenile"
+                    title="Open latest save"
+                    aria-label="Refresh diagram"
                     onClick={async () => {
                       const navigation = navigationVersion.current;
                       try {
@@ -623,7 +629,7 @@ export function Workspace({
                           `/api/diagrams/${record.id}`,
                         );
                         if (acceptRecord(next, navigation))
-                          setNotice({ text: "Son kaydedilmiş sürüm açıldı." });
+                          setNotice({ text: "Opened the latest saved revision." });
                       } catch (failure) {
                         showError(failure);
                       }
@@ -637,7 +643,7 @@ export function Workspace({
                     <>
                       <button
                         className="scope-back"
-                        aria-label="Genel haritaya dön"
+                        aria-label="Back to overview"
                         onClick={() => {
                           setScopeId(null);
                           setSelectedId(null);
@@ -646,7 +652,7 @@ export function Workspace({
                         }}
                       >
                         <ArrowLeft size={14} />
-                        Genel harita
+                        Overview
                       </button>
                       {breadcrumbs.map((node) => (
                         <span key={node.id} className="scope-crumb">
@@ -660,7 +666,11 @@ export function Workspace({
                   ) : (
                     <span className="scope-label">
                       <Network size={14} />
-                      Genel bakış<span>{visible?.nodes.length} ana adım</span>
+                      Overview
+                      <span>
+                        {visible?.nodes.length}{" "}
+                        {visible?.nodes.length === 1 ? "main step" : "main steps"}
+                      </span>
                     </span>
                   )}
                   <label className="feedback-toggle">
@@ -671,14 +681,14 @@ export function Workspace({
                         setShowFeedback(event.target.checked)
                       }
                     />
-                    <span>Geri besleme</span>
+                    <span>Feedback</span>
                   </label>
                 </div>
                 {editing && (
                   <div className="edit-toolbar">
                     <span>
                       <Pencil size={13} />
-                      Düzenleme açık
+                      Editing enabled
                     </span>
                     <button
                       className="text-button"
@@ -687,7 +697,7 @@ export function Workspace({
                       }
                     >
                       <Plus size={14} />
-                      Düğüm ekle
+                      Add node
                     </button>
                     <button
                       className="text-button"
@@ -700,7 +710,7 @@ export function Workspace({
                       disabled={record.document.nodes.length < 1}
                     >
                       <Link2 size={14} />
-                      Bağlantı ekle
+                      Add connection
                     </button>
                     <button
                       className="text-button"
@@ -730,7 +740,7 @@ export function Workspace({
                       }}
                     >
                       <RefreshCw size={13} />
-                      Yerleşimi yenile
+                      Reset layout
                     </button>
                   </div>
                 )}
@@ -743,11 +753,11 @@ export function Workspace({
                   {!visible?.nodes.length ? (
                     <div className="map-empty">
                       <Network size={36} />
-                      <h2>Burada bir harita başlayacak.</h2>
+                      <h2>Your map starts here.</h2>
                       <p>
-                        Agentın düğümleri ve bağlantıları ekleyebilir.
+                        Your agent can add nodes and connections.
                         <br />
-                        Sen de düzenleme modunda ilk adımı oluşturabilirsin.
+                        You can also add your first step in edit mode.
                       </p>
                       <button
                         className="button"
@@ -757,7 +767,7 @@ export function Workspace({
                         }}
                       >
                         <Plus size={15} />
-                        İlk düğümü ekle
+                        Add first node
                       </button>
                     </div>
                   ) : view === "map" ? (
@@ -795,10 +805,11 @@ export function Workspace({
                           {node.childCount > 0 && (
                             <button
                               className="text-button"
-                              aria-label={`${node.label} aşamasını aç`}
+                              aria-label={`Open ${node.label} phase`}
                               onClick={() => drill(node.id)}
                             >
-                              {node.childCount} alt adım
+                              {node.childCount}{" "}
+                              {node.childCount === 1 ? "child step" : "child steps"}
                               <ChevronRight size={14} />
                             </button>
                           )}
@@ -809,27 +820,27 @@ export function Workspace({
                   {opening && (
                     <div className="opening-overlay" role="status">
                       <LoaderCircle className="spin" size={22} />
-                      Diyagram açılıyor…
+                      Opening diagram…
                     </div>
                   )}
                 </div>
                 <footer className="map-footer">
                   <span>
                     {editing
-                      ? "Değişiklikler kayıt onayından sonra görünür."
-                      : "Okuma modu"}
+                      ? "Changes appear after the save is confirmed."
+                      : "Reading mode"}
                     <span className="footer-divider" />
-                    Sürüm {record.revision}
+                    Revision {record.revision}
                   </span>
                   <div className="map-legend">
                     <span>
                       <i />
-                      Akış
+                      Flow
                     </span>
                     {showFeedback && (
                       <span>
                         <i className="feedback-line" />
-                        Geri besleme
+                        Feedback
                       </span>
                     )}
                   </div>
@@ -875,11 +886,11 @@ export function Workspace({
             <div className="welcome-symbol">
               <Network size={44} />
             </div>
-            <h1>Fikirlerine bir harita aç.</h1>
+            <h1>Give your ideas a map.</h1>
             <p>
-              Süreçlerini, projelerini ve düşüncelerini
+              Your processes, projects and ideas,
               <br />
-              bir arada görebileceğin kişisel alanın.
+              together in your private workspace.
             </p>
             <div>
               <button
@@ -887,7 +898,7 @@ export function Workspace({
                 onClick={() => setModal({ type: "new" })}
               >
                 <Plus size={16} />
-                Yeni diyagram
+                New diagram
               </button>
               <button
                 className="button"
@@ -899,7 +910,7 @@ export function Workspace({
                   }
                 }}
               >
-                Kurgusal örneği aç
+                Open fictional example
               </button>
             </div>
           </section>
@@ -914,7 +925,7 @@ export function Workspace({
           <span>{notice.text}</span>
           <button
             className="icon-button"
-            aria-label="Bildirimi kapat"
+            aria-label="Dismiss notification"
             onClick={() => setNotice(null)}
           >
             <X size={14} />
@@ -983,7 +994,7 @@ export function Workspace({
             await refreshCollection().catch(() => {});
             if (displayed)
               setNotice({
-                text: "Önceki sürüm yeni bir kayıt olarak geri yüklendi.",
+                text: "Restored the earlier revision as a new save.",
               });
           }}
         />

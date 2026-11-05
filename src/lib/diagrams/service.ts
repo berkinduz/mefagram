@@ -5,6 +5,7 @@ import { DiagramError } from "./errors";
 import { MAX_TRANSFER_BYTES } from "./limits";
 import { applyPatch, operationsSchema } from "./patch";
 import { DiagramRepository, recordContent } from "./repository";
+import { englishRevisionSummary } from "./revision-summary";
 import {
   createDiagramSchema,
   exportSchema,
@@ -46,8 +47,15 @@ export class DiagramService {
   get(ownerId: string, id: string) {
     return this.repository.get(ownerId, validated(idSchema, id));
   }
-  revisions(ownerId: string, id: string) {
-    return this.repository.revisions(ownerId, validated(idSchema, id));
+  async revisions(ownerId: string, id: string) {
+    const history = await this.repository.revisions(
+      ownerId,
+      validated(idSchema, id),
+    );
+    return history.map((item) => ({
+      ...item,
+      summary: englishRevisionSummary(item.summary),
+    }));
   }
 
   async create(ownerId: string, input: unknown, mutationId: string) {
@@ -96,7 +104,7 @@ export class DiagramService {
       transaction,
       saved,
       this.actor,
-      "Diyagram oluşturuldu",
+      "Diagram created",
     );
     return saved;
   }
@@ -120,7 +128,7 @@ export class DiagramService {
         if (current.revision !== expectedRevision)
           throw new DiagramError(
             "REVISION_CONFLICT",
-            "Diyagramın daha yeni bir sürümü var. Önce son sürümü açın.",
+            "This diagram has a newer revision. Open the latest revision first.",
             409,
           );
         const next = applyPatch(recordContent(current), operations);
@@ -134,15 +142,15 @@ export class DiagramService {
         const summary =
           operations.length === 1
             ? {
-                update_metadata: "Diyagram bilgileri güncellendi",
-                add_node: "Düğüm eklendi",
-                update_node: "Düğüm güncellendi",
-                remove_node: "Düğüm silindi",
-                add_edge: "Bağlantı eklendi",
-                update_edge: "Bağlantı güncellendi",
-                remove_edge: "Bağlantı silindi",
+                update_metadata: "Diagram details updated",
+                add_node: "Node added",
+                update_node: "Node updated",
+                remove_node: "Node removed",
+                add_edge: "Connection added",
+                update_edge: "Connection updated",
+                remove_edge: "Connection removed",
               }[operations[0].op]
-            : `${operations.length} değişiklik uygulandı`;
+            : `${operations.length} changes applied`;
         await this.repository.appendRevision(
           transaction,
           saved,
@@ -186,7 +194,7 @@ export class DiagramService {
           transaction,
           saved,
           this.actor,
-          `Sürüm ${revision} geri yüklendi`,
+          `Restored revision ${revision}`,
         );
         return saved;
       },
@@ -221,7 +229,7 @@ export class DiagramService {
     legacyHashes: readonly string[] = [],
   ): Promise<DiagramRecord> {
     validated(z.string().min(1).max(128), mutationId);
-    if (!ownerId) throw new DiagramError("UNAUTHORIZED", "Oturum açın.", 401);
+    if (!ownerId) throw new DiagramError("UNAUTHORIZED", "Please sign in.", 401);
     const hash = createHash("sha256").update(canonical(request)).digest("hex");
     return this.database.transaction(async (transaction) => {
       const reservation = await transaction.query(
@@ -240,13 +248,13 @@ export class DiagramService {
         )
           throw new DiagramError(
             "IDEMPOTENCY_CONFLICT",
-            "Bu işlem kimliği başka bir istek için kullanılmış.",
+            "This mutation ID has already been used for a different request.",
             409,
           );
         if (!result.rows[0]?.result)
           throw new DiagramError(
             "MUTATION_PENDING",
-            "İşlem henüz tamamlanmadı. Aynı kimlikle yeniden deneyin.",
+            "The request is still in progress. Retry with the same mutation ID.",
             409,
           );
         return result.rows[0].result as DiagramRecord;

@@ -11,12 +11,12 @@ describe("authenticated HTTP diagram workflow", () => {
   let token: string;
   const baseURL = "http://localhost:3200";
   const fixture = {
-    title: "Kalıcı API haritası",
+    title: "Persistent API map",
     description: "",
     tags: [],
     document: {
       schemaVersion: 1,
-      nodes: [{ id: "first", label: "İlk adım", kind: "step" }],
+      nodes: [{ id: "first", label: "First step", kind: "step" }],
       edges: [],
     },
   };
@@ -191,7 +191,7 @@ describe("authenticated HTTP diagram workflow", () => {
     const created = await createdResponse.json();
     expect(
       (await (await request(`/api/diagrams/${created.id}`)).json()).title,
-    ).toBe("Kalıcı API haritası");
+    ).toBe("Persistent API map");
     const updatedResponse = await request(
       `/api/diagrams/${created.id}`,
       "PATCH",
@@ -201,7 +201,7 @@ describe("authenticated HTTP diagram workflow", () => {
           {
             op: "update_node",
             id: "first",
-            changes: { notes: "HTTP üzerinden kaydedildi" },
+            changes: { notes: "Saved through HTTP" },
           },
         ],
       },
@@ -225,7 +225,7 @@ describe("authenticated HTTP diagram workflow", () => {
     const imported = await (
       await request("/api/diagrams/import", "POST", exported, "http-import")
     ).json();
-    expect(imported.document.nodes[0].notes).toBe("HTTP üzerinden kaydedildi");
+    expect(imported.document.nodes[0].notes).toBe("Saved through HTTP");
     expect(imported.id).not.toBe(created.id);
     await request(
       `/api/diagrams/${created.id}`,

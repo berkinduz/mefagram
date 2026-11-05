@@ -18,11 +18,11 @@ import type {
 } from "@/lib/diagrams/schema";
 
 const kindLabels = {
-  phase: "Aşama",
-  step: "Adım",
-  decision: "Karar",
-  note: "Not",
-  result: "Çıktı",
+  phase: "Phase",
+  step: "Step",
+  decision: "Decision",
+  note: "Note",
+  result: "Result",
 };
 export function NodeInspector({
   record,
@@ -55,7 +55,7 @@ export function NodeInspector({
   );
   const byId = new Map(record.document.nodes.map((item) => [item.id, item]));
   return (
-    <aside className="inspector" aria-label="Düğüm detayları">
+    <aside className="inspector" aria-label="Node details">
       <div className="inspector-top">
         <span className="inspector-kind">
           <Layers3 size={14} />
@@ -64,7 +64,7 @@ export function NodeInspector({
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Detayları kapat"
+          aria-label="Close details"
         >
           <X size={17} />
         </button>
@@ -72,7 +72,7 @@ export function NodeInspector({
       <div className="inspector-scroll">
         <h2>{node.label}</h2>
         <p className="node-description">
-          {node.description || "Bu düğümün açıklaması henüz eklenmedi."}
+          {node.description || "No description for this node yet."}
         </p>
         <div className="inspector-actions">
           <button
@@ -81,16 +81,16 @@ export function NodeInspector({
             onClick={onFocus}
           >
             <Crosshair size={14} />
-            {focus ? "Odağı kaldır" : "Bağlantılara odaklan"}
+            {focus ? "Clear focus" : "Focus connections"}
           </button>
           {editing && (
             <button
               className="button small"
               onClick={onEdit}
-              aria-label="Düğümü düzenle"
+              aria-label="Edit node"
             >
               <Pencil size={14} />
-              Düzenle
+              Edit
             </button>
           )}
         </div>
@@ -98,10 +98,10 @@ export function NodeInspector({
           <section className="inspector-section">
             <div className="section-row">
               <h3>
-                Alt adımlar<span>{children.length}</span>
+                Child steps<span>{children.length}</span>
               </h3>
               <button className="text-button" onClick={() => onDrill(node.id)}>
-                Haritada aç
+                Open in map
                 <ArrowUpRight size={13} />
               </button>
             </div>
@@ -119,15 +119,15 @@ export function NodeInspector({
         <section className="inspector-section">
           <h3>
             <FileText size={14} />
-            Notlar
+            Notes
           </h3>
           <div className={`prose-note ${node.notes ? "" : "muted"}`}>
-            {node.notes || "Henüz not eklenmedi."}
+            {node.notes || "No notes yet."}
           </div>
         </section>
         <section className="inspector-section">
           <h3>
-            Kaynaklar<span>{node.sources.length}</span>
+            Sources<span>{node.sources.length}</span>
           </h3>
           {node.sources.length ? (
             <div className="source-list">
@@ -148,14 +148,14 @@ export function NodeInspector({
             </div>
           ) : (
             <p className="muted small-copy">
-              Bu düğüme henüz kaynak eklenmedi.
+              No sources for this node yet.
             </p>
           )}
         </section>
         {related.length > 0 && (
           <section className="inspector-section">
             <h3>
-              Bağlantılar<span>{related.length}</span>
+              Connections<span>{related.length}</span>
             </h3>
             <div className="relation-list">
               {related.map((edge) => {
@@ -174,12 +174,12 @@ export function NodeInspector({
                         <small>
                           {edge.label ||
                             (edge.kind === "feedback"
-                              ? "Geri besleme"
+                              ? "Feedback"
                               : edge.kind === "reference"
-                                ? "İlişki"
+                                ? "Reference"
                                 : outgoing
-                                  ? "Sonraki adım"
-                                  : "Önceki adım")}
+                                  ? "Next step"
+                                  : "Previous step")}
                         </small>
                       </span>
                     </button>
@@ -187,7 +187,7 @@ export function NodeInspector({
                       <button
                         className="icon-button"
                         onClick={() => onEditEdge(edge)}
-                        aria-label="Bağlantıyı düzenle"
+                        aria-label="Edit connection"
                       >
                         <Pencil size={13} />
                       </button>
@@ -207,9 +207,9 @@ export function NodeInspector({
         )}
       </div>
       <footer className="inspector-footer">
-        <span>Kaydedilmiş sürüm {record.revision}</span>
+        <span>Saved revision {record.revision}</span>
         <span className="saved-dot" />
-        Güncel
+        Current
       </footer>
     </aside>
   );
@@ -233,25 +233,24 @@ export function EdgeInspector({
   const edges = record.document.edges.filter((edge) => ids.includes(edge.id));
   const byId = new Map(record.document.nodes.map((node) => [node.id, node]));
   return (
-    <aside className="inspector" aria-label="Bağlantı detayları">
+    <aside className="inspector" aria-label="Connection details">
       <div className="inspector-top">
         <span className="inspector-kind">
           <ArrowRight size={14} />
-          Bağlantı
+          Connection
         </span>
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Detayları kapat"
+          aria-label="Close details"
         >
           <X size={17} />
         </button>
       </div>
       <div className="inspector-scroll">
-        <h2>Adımlar arasındaki ilişki</h2>
+        <h2>Connections between steps</h2>
         <p className="node-description">
-          Genel bakışta aynı aşamalar arasındaki bağlantılar birlikte
-          gösterilir.
+          Connections between the same phases are grouped in the overview.
         </p>
         {edges.map((edge) => (
           <section className="inspector-section" key={edge.id}>
@@ -264,14 +263,14 @@ export function EdgeInspector({
                 {byId.get(edge.target)?.label}
               </button>
             </div>
-            <p>{edge.label || "Bağlantı adı eklenmedi."}</p>
+            <p>{edge.label || "No connection label yet."}</p>
             <span className="tag-list">
               <span>
                 {edge.kind === "feedback"
-                  ? "Geri besleme"
+                  ? "Feedback"
                   : edge.kind === "reference"
-                    ? "İlişki"
-                    : "Akış"}
+                    ? "Reference"
+                    : "Flow"}
               </span>
             </span>
             {editing && (
@@ -280,7 +279,7 @@ export function EdgeInspector({
                 onClick={() => onEdit(edge)}
               >
                 <Pencil size={14} />
-                Bağlantıyı düzenle
+                Edit connection
               </button>
             )}
           </section>

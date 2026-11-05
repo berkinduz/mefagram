@@ -81,6 +81,6 @@ export class PersonalTokenService {
       [ownerId, id],
     );
     if (!result.rows.length)
-      throw new DiagramError("NOT_FOUND", "Erişim anahtarı bulunamadı.", 404);
+      throw new DiagramError("NOT_FOUND", "Access token not found.", 404);
   }
 }

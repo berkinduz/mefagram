@@ -22,7 +22,7 @@ const tagsFrom = (value: string) => [
   ),
 ];
 const message = (error: unknown) =>
-  error instanceof Error ? error.message : "İşlem tamamlanamadı.";
+  error instanceof Error ? error.message : "Could not complete the request.";
 const uncertainResult = (error: unknown) =>
   error instanceof ApiError && (error.status === 0 || error.status >= 500);
 // An identical retry keeps its key; a genuinely changed request gets a new one.
@@ -94,7 +94,7 @@ export function DiagramEditor({
       setUncertain(pending);
       setError(
         pending
-          ? "Oluşturma isteğinin sonucu alınamadı. Aynı kaydı onaylamak için yeniden dene; bu sırada alanları koruduk."
+          ? "The creation result could not be confirmed. Try again to confirm the same save; your entries are preserved."
           : message(failure),
       );
     } finally {
@@ -103,17 +103,17 @@ export function DiagramEditor({
   }
   return (
     <Dialog
-      title={record ? "Diyagram bilgileri" : "Yeni bir diyagram"}
+      title={record ? "Diagram details" : "Create a diagram"}
       description={
         record
-          ? "Adını, açıklamasını ve aramada kullanılacak etiketlerini düzenle."
-          : "Bir ad ver. Haritanı sen veya agentın adım adım oluşturabilirsiniz."
+          ? "Edit the name, description and searchable tags."
+          : "Give it a name. You or your agent can build the map step by step."
       }
       onClose={onClose}
     >
       <form className="dialog-form form-stack" onSubmit={submit}>
         <label>
-          Diyagram adı
+          Diagram name
           <input
             readOnly={uncertain}
             value={title}
@@ -121,41 +121,41 @@ export function DiagramEditor({
             required
             maxLength={160}
             autoFocus
-            placeholder="Örneğin: Ürün geliştirme süreci"
+            placeholder="For example: Product development"
           />
         </label>
         <label>
-          Açıklama
+          Description
           <textarea
             readOnly={uncertain}
             rows={3}
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             maxLength={12000}
-            placeholder="Bu harita neyi anlamaya yardımcı oluyor?"
+            placeholder="What does this map help you understand?"
           />
         </label>
         <label>
-          Etiketler
+          Tags
           <input
             readOnly={uncertain}
             value={tags}
             onChange={(event) => setTags(event.target.value)}
-            placeholder="Ürün, araştırma, yayın"
+            placeholder="Product, research, release"
           />
-          <small>Etiketleri virgülle ayır.</small>
+          <small>Separate tags with commas.</small>
         </label>
         <FormError error={error} />
         <div className="dialog-actions">
           <button type="button" className="button" onClick={onClose}>
-            Vazgeç
+            Cancel
           </button>
           <button className="button primary" disabled={busy || !title.trim()}>
             {busy
-              ? "Kaydediliyor…"
+              ? "Saving…"
               : record
-                ? "Değişiklikleri kaydet"
-                : "Diyagramı oluştur"}
+                ? "Save changes"
+                : "Create diagram"}
           </button>
         </div>
       </form>
@@ -263,8 +263,8 @@ export function NodeEditor({
   }
   return (
     <Dialog
-      title={node ? "Düğümü düzenle" : "Haritaya bir düğüm ekle"}
-      description="Kısa bir ad kullan; açıklama ve notları detaylarda tut."
+      title={node ? "Edit node" : "Add a node to the map"}
+      description="Use a short name. Keep descriptions and notes in the details."
       onClose={onClose}
       wide
     >
@@ -272,60 +272,60 @@ export function NodeEditor({
         <div className="editor-grid">
           <div className="form-stack">
             <label>
-              Düğüm adı
+              Node name
               <input
                 autoFocus
                 value={label}
                 onChange={(event) => setLabel(event.target.value)}
                 required
                 maxLength={120}
-                placeholder="Bu adımın adı"
+                placeholder="Name this step"
               />
             </label>
             <label>
-              Açıklama
+              Description
               <textarea
                 rows={3}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 maxLength={12000}
-                placeholder="Neyi, neden yapıyoruz?"
+                placeholder="What are we doing, and why?"
               />
             </label>
             <label>
-              Notlar
+              Notes
               <textarea
                 rows={5}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 maxLength={50000}
-                placeholder="Kararlar, açık sorular, araştırma notları…"
+                placeholder="Decisions, open questions, research notes…"
               />
             </label>
           </div>
           <div className="form-stack editor-settings">
             <label>
-              Düğüm türü
+              Node type
               <select
                 value={kind}
                 onChange={(event) =>
                   setKind(event.target.value as DiagramNode["kind"])
                 }
               >
-                <option value="phase">Aşama</option>
-                <option value="step">Adım</option>
-                <option value="decision">Karar</option>
-                <option value="note">Not</option>
-                <option value="result">Çıktı</option>
+                <option value="phase">Phase</option>
+                <option value="step">Step</option>
+                <option value="decision">Decision</option>
+                <option value="note">Note</option>
+                <option value="result">Result</option>
               </select>
             </label>
             <label>
-              Üst düğüm
+              Parent node
               <select
                 value={parent}
                 onChange={(event) => setParent(event.target.value)}
               >
-                <option value="">Genel harita</option>
+                <option value="">Overview</option>
                 {parentOptions.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
@@ -334,21 +334,21 @@ export function NodeEditor({
               </select>
             </label>
             <label>
-              Etiketler
+              Tags
               <input
                 value={tags}
                 onChange={(event) => setTags(event.target.value)}
-                placeholder="Virgülle ayır"
+                placeholder="Separate with commas"
               />
             </label>
             <p className="field-help">
-              Üst düğümler, büyük haritaları açılabilir küçük süreçlere ayırır.
+              Parent nodes divide large maps into smaller processes you can open.
             </p>
           </div>
         </div>
         <section className="sources-editor">
           <div className="section-row">
-            <h3>Kaynaklar</h3>
+            <h3>Sources</h3>
             <button
               type="button"
               className="text-button"
@@ -356,17 +356,17 @@ export function NodeEditor({
               disabled={sources.length >= 30}
             >
               <Plus size={15} />
-              Kaynak ekle
+              Add source
             </button>
           </div>
           {sources.map((source, index) => (
             <div className="source-input-row" key={index}>
               <label className="sr-only" htmlFor={`source-label-${index}`}>
-                Kaynak {index + 1} adı
+                Source {index + 1} name
               </label>
               <input
                 id={`source-label-${index}`}
-                placeholder="Kaynak adı"
+                placeholder="Source name"
                 value={source.label}
                 required
                 maxLength={160}
@@ -381,7 +381,7 @@ export function NodeEditor({
                 }
               />
               <label className="sr-only" htmlFor={`source-url-${index}`}>
-                Kaynak {index + 1} bağlantısı
+                Source {index + 1} URL
               </label>
               <input
                 id={`source-url-${index}`}
@@ -403,7 +403,7 @@ export function NodeEditor({
               <button
                 type="button"
                 className="icon-button"
-                aria-label={`Kaynak ${index + 1} kaldır`}
+                aria-label={`Remove source ${index + 1}`}
                 onClick={() =>
                   setSources(
                     sources.filter((_, position) => position !== index),
@@ -423,13 +423,12 @@ export function NodeEditor({
             target="_blank"
             rel="noopener noreferrer"
           >
-            Gerekirse yeni sekmede oturum aç
+            Sign in in a new tab if needed
           </a>
         )}
         {confirmDelete && (
           <p className="form-error">
-            Alt adımlar ve bağlantılar da kaldırılacak. Sürüm geçmişinden geri
-            alabilirsin.
+            Child steps and connections will also be removed. You can restore them from revision history.
           </p>
         )}
         <div className="dialog-actions">
@@ -442,15 +441,15 @@ export function NodeEditor({
             >
               <Trash2 size={15} />
               {confirmDelete
-                ? "Düğümü ve bağlantılarını kaldır"
-                : "Düğümü kaldır"}
+                ? "Remove node and connections"
+                : "Remove node"}
             </button>
           )}
           <button type="button" className="button" onClick={onClose}>
-            Vazgeç
+            Cancel
           </button>
           <button className="button primary" disabled={busy || !label.trim()}>
-            {busy ? "Kaydediliyor…" : "Düğümü kaydet"}
+            {busy ? "Saving…" : "Save node"}
           </button>
         </div>
       </form>
@@ -517,19 +516,19 @@ export function EdgeEditor({
   }
   return (
     <Dialog
-      title={edge ? "Bağlantıyı düzenle" : "İki düğümü bağla"}
+      title={edge ? "Edit connection" : "Connect two nodes"}
       onClose={onClose}
     >
       <form className="dialog-form form-stack" onSubmit={submit}>
         <div className="form-two">
           <label>
-            Başlangıç
+            Source
             <select
               value={from}
               onChange={(event) => setFrom(event.target.value)}
               required
             >
-              <option value="">Düğüm seç</option>
+              <option value="">Select a node</option>
               {record.document.nodes.map((node) => (
                 <option value={node.id} key={node.id}>
                   {node.label}
@@ -538,13 +537,13 @@ export function EdgeEditor({
             </select>
           </label>
           <label>
-            Hedef
+            Target
             <select
               value={to}
               onChange={(event) => setTo(event.target.value)}
               required
             >
-              <option value="">Düğüm seç</option>
+              <option value="">Select a node</option>
               {record.document.nodes.map((node) => (
                 <option value={node.id} key={node.id}>
                   {node.label}
@@ -554,25 +553,25 @@ export function EdgeEditor({
           </label>
         </div>
         <label>
-          Bağlantı adı
+          Connection name
           <input
             value={label}
             onChange={(event) => setLabel(event.target.value)}
             maxLength={160}
-            placeholder="İsteğe bağlı: ne zaman, neden?"
+            placeholder="Optional: when or why?"
           />
         </label>
         <label>
-          Bağlantı türü
+          Connection type
           <select
             value={kind}
             onChange={(event) =>
               setKind(event.target.value as DiagramEdge["kind"])
             }
           >
-            <option value="flow">Akış</option>
-            <option value="feedback">Geri besleme</option>
-            <option value="reference">İlişki / referans</option>
+            <option value="flow">Flow</option>
+            <option value="feedback">Feedback</option>
+            <option value="reference">Reference</option>
           </select>
         </label>
         <FormError error={error} />
@@ -598,14 +597,14 @@ export function EdgeEditor({
               }}
             >
               <Trash2 size={15} />
-              Bağlantıyı kaldır
+              Remove connection
             </button>
           )}
           <button type="button" className="button" onClick={onClose}>
-            Vazgeç
+            Cancel
           </button>
           <button className="button primary" disabled={busy || !from || !to}>
-            {busy ? "Kaydediliyor…" : "Bağlantıyı kaydet"}
+            {busy ? "Saving…" : "Save connection"}
           </button>
         </div>
       </form>
@@ -627,8 +626,8 @@ export function ImportDialog({
   const [uncertain, setUncertain] = useState(false);
   return (
     <Dialog
-      title="Diyagramı içe aktar"
-      description="Mefagram JSON dosyaları; düğümleri, bağlantıları, notları ve kaynakları birlikte taşır."
+      title="Import diagram"
+      description="Mefagram JSON files include nodes, connections, notes and sources."
       onClose={onClose}
     >
       <form
@@ -641,7 +640,7 @@ export function ImportDialog({
           try {
             if (file.size > MAX_TRANSFER_BYTES)
               throw new ApiError(
-                "Dosya 8 MB aktarım sınırını aşıyor. Diyagram içeriği en fazla 2 MB olabilir.",
+                "The file exceeds the 8 MB transfer limit. Diagram content must be 2 MB or less.",
                 "VALIDATION_ERROR",
                 400,
               );
@@ -649,7 +648,7 @@ export function ImportDialog({
             try {
               value = JSON.parse(await file.text());
             } catch {
-              throw new Error("Dosya geçerli JSON içermiyor.");
+              throw new Error("The file does not contain valid JSON.");
             }
             await onImport(value, mutationKey(value));
             onClose();
@@ -658,7 +657,7 @@ export function ImportDialog({
             setUncertain(pending);
             setError(
               pending
-                ? "İçe aktarma sonucu alınamadı. Aynı dosyayla yeniden dene."
+                ? "The import result could not be confirmed. Try again with the same file."
                 : message(failure),
             );
           } finally {
@@ -667,7 +666,7 @@ export function ImportDialog({
         }}
       >
         <label className="file-field">
-          JSON dosyası
+          JSON file
           <input
             disabled={uncertain}
             type="file"
@@ -678,16 +677,16 @@ export function ImportDialog({
             }}
           />
           <small>
-            İçe aktarılan diyagram yeni bir kayıt olarak oluşturulur.
+            The imported diagram is saved as a new record.
           </small>
         </label>
         <FormError error={error} />
         <div className="dialog-actions">
           <button className="button" type="button" onClick={onClose}>
-            Vazgeç
+            Cancel
           </button>
           <button className="button primary" disabled={!file || busy}>
-            {busy ? "İçe aktarılıyor…" : "Diyagramı içe aktar"}
+            {busy ? "Importing…" : "Import diagram"}
           </button>
         </div>
       </form>

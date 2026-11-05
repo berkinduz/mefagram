@@ -2,6 +2,13 @@
 
 Evidence is recorded separately for the application, its portable installer and a particular hosted deployment. Fixtures are synthetic. Private databases, credentials and raw local reports are excluded from Git and deployment bundles.
 
+## English interface — v0.1.2
+
+The interface, accessibility labels, sign-in/consent, API/MCP errors, date formatting, examples and public documentation use English. Known system summaries from older releases are presented in English by the shared service without rewriting stored rows. User-provided content remains unchanged.
+
+Local verification on 2026-11-05 passed 50 tests, 12 production Chromium flows, typecheck, lint, production build and the 14-manifest bundle privacy check. The three native PostgreSQL cases require CI's disposable database. `npm audit` reported zero vulnerabilities. Regression tests cover uppercase-I English searches, old history presentation with unchanged raw data, and combining marks in actual downloaded/reimported filenames.
+
+Six synthetic production views were visually checked: sign-in, overview, node details, revision history, agent connections and consent. A browser configured with a different locale still received English interface text and dates. An invalid consent request displayed the English recovery message. These checks do not claim an actual Dot connection.
 
 ## Community readiness — v0.1.1
 
@@ -11,14 +18,14 @@ The optional installer sample, empty-workspace action and README now use the sam
 
 A real-clone acceptance run for commit `2c62ae6` also passed empty setup, two independent HTTP MCP clients, concurrent-write conflict, production-browser read-back, actual restart, custom external-directory backup/restore and upgrade from `e557bab`. The independent review’s legacy HTTP retry finding was reproduced and fixed with both receipt-replay and unrelated-key rejection tests.
 
-The constraints below remain part of the supported scope: the interface is Turkish; Windows, a full accessibility audit and actual third-party Dot authorization have not been independently certified. A live remote agent requires the installer’s own reachable HTTPS deployment and credentials. Protocol-level MCP/OAuth tests do not claim a particular user’s cloud account has been configured.
+Windows, a full accessibility audit and actual third-party Dot authorization have not been independently certified. A live remote agent requires the installer’s own reachable HTTPS deployment and credentials. Protocol-level MCP/OAuth tests do not claim a particular user’s cloud account has been configured.
 
 ## Automated application checks
 
 | Check | Observed coverage |
 | --- | --- |
 | TypeScript and ESLint | Type checking and lint pass |
-| Local tests | 48 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
+| Local tests | 50 tests pass in 8 files; 3 native Postgres tests require `TEST_DATABASE_URL` and are skipped without it |
 | Native Postgres | Separate integration suite covers real auth/login/token, ownership, concurrent writes/history, reopen and JSON round-trip; CI supplies an isolated PostgreSQL service |
 | MCP | Official SDK clients exercise tool discovery, create/read/update, scope checks, stale writes and two independent clients sharing canonical state |
 | OAuth | Real HTTP authorization flow: discovery, dynamic registration, login/consent, PKCE exchange and resource-bound access token |

@@ -18,11 +18,11 @@ test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
   await page.goto(`${access.baseURL}/sign-in`);
-  await page.getByLabel("E-posta").fill(access.email);
-  await page.getByLabel("Parola", { exact: true }).fill(access.password);
-  await page.getByRole("button", { name: "Çalışma alanını aç" }).click();
+  await page.getByLabel("Email").fill(access.email);
+  await page.getByLabel("Password", { exact: true }).fill(access.password);
+  await page.getByRole("button", { name: "Open workspace" }).click();
   await page
-    .getByRole("navigation", { name: "Diyagram koleksiyonu" })
+    .getByRole("navigation", { name: "Diagram collection" })
     .waitFor();
   cookies = await context.cookies();
   await context.close();
@@ -34,7 +34,7 @@ test.beforeEach(async ({ page }) => {
 async function create(
   page: Page,
   title: string,
-  nodes = [{ id: "shared-node", label: "Düğüm" }],
+  nodes = [{ id: "shared-node", label: "Node" }],
 ) {
   const response = await page.request.post("/api/diagrams", {
     headers: {
@@ -57,8 +57,8 @@ function deferred() {
 test("ignores a late refresh from a diagram that is no longer active", async ({
   page,
 }) => {
-  const a = await create(page, "Geciken yenileme A");
-  const b = await create(page, "Geciken yenileme B");
+  const a = await create(page, "Delayed refresh A");
+  const b = await create(page, "Delayed refresh B");
   await page.goto(`/?diagram=${a.id}`);
   const captured = deferred();
   const release = deferred();
@@ -72,11 +72,11 @@ test("ignores a late refresh from a diagram that is no longer active", async ({
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Diyagramı yenile" }).click();
+  await page.getByRole("button", { name: "Refresh diagram" }).click();
   await captured.promise;
   await page
-    .getByRole("navigation", { name: "Diyagram koleksiyonu" })
-    .getByRole("button", { name: /Geciken yenileme B/ })
+    .getByRole("navigation", { name: "Diagram collection" })
+    .getByRole("button", { name: /Delayed refresh B/ })
     .click();
   await expect(
     page.getByRole("heading", { name: b.title, exact: true }),
@@ -101,8 +101,8 @@ test("ignores a late refresh from a diagram that is no longer active", async ({
 test("ignores a late save completion after navigating to another diagram", async ({
   page,
 }) => {
-  const a = await create(page, "Geciken kayıt A");
-  const b = await create(page, "Geciken kayıt B");
+  const a = await create(page, "Delayed save A");
+  const b = await create(page, "Delayed save B");
   await page.goto(`/?diagram=${a.id}`);
   const captured = deferred();
   const release = deferred();
@@ -117,12 +117,12 @@ test("ignores a late save completion after navigating to another diagram", async
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Diyagram işlemleri" }).click();
-  await page.getByRole("menuitem", { name: "Arşive taşı" }).click();
+  await page.getByRole("button", { name: "Diagram actions" }).click();
+  await page.getByRole("menuitem", { name: "Archive" }).click();
   await captured.promise;
   await page
-    .getByRole("navigation", { name: "Diyagram koleksiyonu" })
-    .getByRole("button", { name: /Geciken kayıt B/ })
+    .getByRole("navigation", { name: "Diagram collection" })
+    .getByRole("button", { name: /Delayed save B/ })
     .click();
   await expect(
     page.getByRole("heading", { name: b.title, exact: true }),
@@ -149,7 +149,7 @@ test("ignores a late save completion after navigating to another diagram", async
 test("does not regress a newer revision when an earlier refresh arrives last", async ({
   page,
 }) => {
-  const a = await create(page, "Sırası değişen yanıtlar");
+  const a = await create(page, "Out-of-order responses");
   await page.goto(`/?diagram=${a.id}`);
   const captured = deferred();
   const release = deferred();
@@ -163,7 +163,7 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Diyagramı yenile" }).click();
+  await page.getByRole("button", { name: "Refresh diagram" }).click();
   await captured.promise;
   const changed = await page.request.patch(`/api/diagrams/${a.id}`, {
     headers: {
@@ -175,14 +175,14 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
       operations: [
         {
           op: "update_metadata",
-          changes: { description: "Yeni sürümün açıklaması" },
+          changes: { description: "New revision description" },
         },
       ],
     },
   });
   expect(changed.ok()).toBe(true);
-  await page.getByRole("button", { name: "Diyagramı yenile" }).click();
-  await expect(page.locator(".map-footer")).toContainText("Sürüm 2");
+  await page.getByRole("button", { name: "Refresh diagram" }).click();
+  await expect(page.locator(".map-footer")).toContainText("Revision 2");
   const completed = page.waitForResponse((response) =>
     response.url().endsWith(`/api/diagrams/${a.id}`),
   );
@@ -194,9 +194,9 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
         requestAnimationFrame(() => requestAnimationFrame(() => done())),
       ),
   );
-  await expect(page.locator(".map-footer")).toContainText("Sürüm 2");
+  await expect(page.locator(".map-footer")).toContainText("Revision 2");
   await expect(page.locator(".document-title-row")).toContainText(
-    "Yeni sürümün açıklaması",
+    "New revision description",
   );
 });
 
@@ -208,16 +208,17 @@ test("reimports the actual downloaded near-limit JSON file without losing conten
     label: "Synthetic",
     notes: "x".repeat(49898),
   }));
-  const a = await create(page, "Synthetic", nodes);
+  const a = await create(page, "Cafe\u0301 workflow", nodes);
   await page.goto(`/?diagram=${a.id}`);
-  await page.getByRole("button", { name: "Diyagram işlemleri" }).click();
+  await page.getByRole("button", { name: "Diagram actions" }).click();
   const pending = page.waitForEvent("download");
-  await page.getByRole("menuitem", { name: "JSON olarak dışa aktar" }).click();
+  await page.getByRole("menuitem", { name: "Export as JSON" }).click();
   const download = await pending;
+  expect(download.suggestedFilename()).toBe("cafe\u0301-workflow.mefagram.json");
   const contents = await readFile((await download.path())!);
   expect(contents.length).toBeGreaterThan(2_000_000);
   await page
-    .getByRole("button", { name: "Diyagramı içe aktar", exact: true })
+    .getByRole("button", { name: "Import diagram", exact: true })
     .click();
   await page
     .getByRole("dialog")
@@ -229,7 +230,7 @@ test("reimports the actual downloaded near-limit JSON file without losing conten
     });
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Diyagramı içe aktar", exact: true })
+    .getByRole("button", { name: "Import diagram", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const id = new URL(page.url()).searchParams.get("diagram");
@@ -243,7 +244,7 @@ test("reports a failed sign-out and only leaves the workspace after successful r
 }) => {
   await page.goto("/");
   await page
-    .getByRole("navigation", { name: "Diyagram koleksiyonu" })
+    .getByRole("navigation", { name: "Diagram collection" })
     .waitFor();
   await page.route(
     "**/api/auth/sign-out",
@@ -256,17 +257,17 @@ test("reports a failed sign-out and only leaves the workspace after successful r
     { times: 1 },
   );
   await page
-    .getByRole("button", { name: "Oturumu kapat", exact: true })
+    .getByRole("button", { name: "Sign out", exact: true })
     .click();
   await expect(
-    page.getByRole("alert").filter({ hasText: "Oturum kapatılamadı" }),
+    page.getByRole("alert").filter({ hasText: "Could not sign out" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("navigation", { name: "Diyagram koleksiyonu" }),
+    page.getByRole("navigation", { name: "Diagram collection" }),
   ).toBeVisible();
   expect((await page.request.get("/api/diagrams")).status()).toBe(200);
   await page
-    .getByRole("button", { name: "Oturumu kapat", exact: true })
+    .getByRole("button", { name: "Sign out", exact: true })
     .click();
   await expect(page).toHaveURL(/\/sign-in$/);
   expect((await page.request.get("/api/diagrams")).status()).toBe(401);

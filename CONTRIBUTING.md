@@ -1,12 +1,12 @@
 # Contributing to Mefagram
 
-Bug reports, documentation, translations, accessibility improvements, layout work and code contributions are welcome. Start with an issue for changes that affect the data format, authentication or deployment model. Small focused fixes can go directly to a pull request.
+Bug reports, documentation, accessibility improvements, layout work and code contributions are welcome. Start with an issue for changes that affect the data format, authentication or deployment model. Small focused fixes can go directly to a pull request.
 
 ## Local development
 
 Use Node.js 24+. Run `npm ci`, `npm run setup`, then `npm run dev`. A fresh installation is empty. Add the fictional newsletter sample explicitly with `npm run setup -- --example newsletter` while the server is stopped.
 
-The interface currently uses Turkish copy; the README and developer documentation are in English, with a [Turkish quick start](docs/README.tr.md). Diagrams can contain text in any language. Translation contributions are welcome.
+Keep interface text, error messages, documentation and public examples in English. Preserve user-provided diagram content when making changes.
 
 ## Changes and checks
 

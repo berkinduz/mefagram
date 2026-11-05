@@ -26,7 +26,7 @@ export default async function ConsentPage({
   );
   return (
     <ConsentForm
-      clientName={String(client.rows[0]?.name ?? "Agent bağlantısı")}
+      clientName={String(client.rows[0]?.name ?? "Agent connection")}
       query={query.toString()}
     />
   );

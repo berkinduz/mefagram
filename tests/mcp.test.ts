@@ -69,12 +69,12 @@ describe("real MCP client to persistent diagram tools", () => {
     const created = await client.callTool({
       name: "create_diagram",
       arguments: {
-        title: "MCP ile oluşturuldu",
+        title: "Created through MCP",
         description: "",
         tags: [],
         document: {
           schemaVersion: 1,
-          nodes: [{ id: "agent-node", label: "Agent düğümü", kind: "step" }],
+          nodes: [{ id: "agent-node", label: "Agent node", kind: "step" }],
           edges: [],
         },
         mutationId: "mcp-create",
@@ -95,7 +95,7 @@ describe("real MCP client to persistent diagram tools", () => {
           {
             op: "update_node",
             id: "agent-node",
-            changes: { notes: "MCP kaydı doğrulandı" },
+            changes: { notes: "MCP save verified" },
           },
         ],
         mutationId: "mcp-update",
@@ -103,7 +103,7 @@ describe("real MCP client to persistent diagram tools", () => {
     });
     expect(updated.isError).not.toBe(true);
     const reopened = await new DiagramService(db).get(ownerId, record.id);
-    expect(reopened.document.nodes[0].notes).toBe("MCP kaydı doğrulandı");
+    expect(reopened.document.nodes[0].notes).toBe("MCP save verified");
     expect(reopened.revision).toBe(2);
     const stale = await client.callTool({
       name: "update_diagram",

@@ -15,6 +15,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - For content work, use the running MCP endpoint or `npm run agent -- ...`; do not open or edit its live PGlite files. Read [docs/agent-integration.md](docs/agent-integration.md) first.
 - Read a diagram before patching it. Preserve stable IDs/unrelated content. Supply expected revision and a unique mutation ID; retry an identical failed response with the same ID. Reconcile revision conflicts explicitly.
 - The bundled newsletter example is fictional. Keep README, installer and UI examples aligned. Never publish an owner’s project content, credentials or screenshots as public fixtures.
+- Use English for interface text, error messages, documentation and public fixtures. Preserve user-provided diagram content; do not translate existing data during upgrades.
 - Keep the human experience focused on reading and analysis: short labels, hierarchical phases, notes/sources in details, deliberate editing.
 - Use real persistence and ownership tests for changes to the data/auth paths. Run typecheck, lint and the affected tests. Test the production build and bundle privacy when changing runtime/deployment code.
 - `npm run test:e2e` uses disposable `.mefagram/e2e-*` fixtures. Do not run multiple Playwright invocations concurrently; they share that fixture server and report directory. Use `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e` after a build to test production.

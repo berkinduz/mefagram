@@ -42,7 +42,7 @@ export function Dialog({
         <button
           className="icon-button"
           onClick={onClose}
-          aria-label="Kapat"
+          aria-label="Close"
           type="button"
         >
           <X size={18} />

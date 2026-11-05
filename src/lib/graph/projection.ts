@@ -92,7 +92,7 @@ export function projectGraph(
       existing.originalIds.push(edge.id);
       if (edge.label && !existing.label.includes(edge.label))
         existing.label = existing.label
-          ? `${existing.originalIds.length} bağlantı`
+          ? `${existing.originalIds.length} connections`
           : edge.label;
     } else
       edges.set(key, {
@@ -107,7 +107,7 @@ export function projectGraph(
 }
 
 export function searchNodes(document: DiagramDocument, query: string) {
-  const needle = query.trim().toLocaleLowerCase("tr-TR");
+  const needle = query.trim().toLowerCase();
   if (!needle) return [];
   return document.nodes.filter((node) =>
     [
@@ -118,7 +118,7 @@ export function searchNodes(document: DiagramDocument, query: string) {
       ...node.sources.map((source) => source.label),
     ]
       .join(" ")
-      .toLocaleLowerCase("tr-TR")
+      .toLowerCase()
       .includes(needle),
   );
 }

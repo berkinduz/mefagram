@@ -24,15 +24,15 @@ try {
   assert.equal(tools.tools.length, 7);
   if (phase === "before-restart") {
     const created = await call("create_diagram", {
-      title: "MCP yeniden başlatma doğrulaması",
-      tags: ["Doğrulama"],
+      title: "MCP restart verification",
+      tags: ["Verification"],
       document: {
         schemaVersion: 1,
         nodes: [
           {
             id: "persisted-agent-node",
-            label: "Agentın kalıcı kaydı",
-            description: "Gerçek HTTP MCP üzerinden üretim sunucusuna yazıldı.",
+            label: "Persistent agent record",
+            description: "Written to the production server through real HTTP MCP.",
           },
         ],
         edges: [],
@@ -47,7 +47,7 @@ try {
           op: "update_node",
           id: "persisted-agent-node",
           changes: {
-            notes: "Sunucu yeniden açıldıktan sonra da burada olmalı.",
+            notes: "Must remain here after the server restarts.",
             sources: [{ label: "React Flow", url: "https://reactflow.dev/" }],
           },
         },
@@ -92,19 +92,19 @@ try {
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
       await page.goto(`${baseURL}/sign-in`);
-      await page.getByLabel("E-posta").fill(access.email);
-      await page.getByLabel("Parola", { exact: true }).fill(access.password);
-      await page.getByRole("button", { name: "Çalışma alanını aç" }).click();
+      await page.getByLabel("Email").fill(access.email);
+      await page.getByLabel("Password", { exact: true }).fill(access.password);
+      await page.getByRole("button", { name: "Open workspace" }).click();
       await page
-        .getByRole("navigation", { name: "Diyagram koleksiyonu" })
+        .getByRole("navigation", { name: "Diagram collection" })
         .waitFor();
       await page.goto(`${baseURL}/?diagram=${marker.id}`);
       await page
-        .getByText("Agentın kalıcı kaydı", { exact: true })
+        .getByText("Persistent agent record", { exact: true })
         .first()
         .click();
       await page
-        .getByRole("complementary", { name: "Düğüm detayları" })
+        .getByRole("complementary", { name: "Node details" })
         .getByText(marker.note, { exact: true })
         .waitFor();
       await page.screenshot({

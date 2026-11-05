@@ -36,7 +36,7 @@ export async function api<T>(
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") throw error;
     throw new ApiError(
-      "Bağlantı kurulamadı. Yazdıkların bu formda duruyor; yeniden deneyebilirsin.",
+      "Could not connect. Your entries are preserved in this form; please try again.",
       "NETWORK_ERROR",
       0,
     );
@@ -44,7 +44,7 @@ export async function api<T>(
   const result = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new ApiError(
-      result.error ?? result.message ?? "İşlem tamamlanamadı. Yeniden dene.",
+      result.error ?? result.message ?? "Could not complete the request. Please try again.",
       result.code ?? "REQUEST_FAILED",
       response.status,
     );
