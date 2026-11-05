@@ -43,33 +43,34 @@ This registration is not performed automatically by the repository. The process 
 5. On `REVISION_CONFLICT`, reread and reconcile the user's intent with newer changes. Use a new mutation ID for the reconciled request. Do not automatically overwrite the whole graph.
 6. If the response is lost, retry the identical request/ID to recover its committed result without duplicating it.
 
-Example `update_diagram` arguments:
+Example `update_diagram` arguments for the bundled newsletter workflow. Replace the diagram ID and revision with the latest `get_diagram` result; for another map, use that map’s node IDs:
 
 ```json
 {
   "id": "replace-with-saved-diagram-id",
   "expectedRevision": 1,
-  "mutationId": "unique-update-2026-11-04-001",
+  "mutationId": "example-update-001",
   "operations": [
     {
       "op": "update_node",
-      "id": "research-problem",
-      "changes": { "notes": "Yeni araştırma bulgusu." }
+      "id": "ideas",
+      "changes": { "notes": "New questions for the next newsletter issue." }
     },
     {
       "op": "add_node",
       "node": {
-        "id": "validation-decision",
-        "label": "Devam kararını ver",
-        "kind": "decision"
+        "id": "follow-up",
+        "label": "Plan a follow-up",
+        "kind": "step",
+        "parentId": "learn"
       }
     },
     {
       "op": "add_edge",
       "edge": {
-        "id": "research-to-validation",
-        "source": "research-problem",
-        "target": "validation-decision",
+        "id": "responses-to-follow-up",
+        "source": "responses",
+        "target": "follow-up",
         "kind": "flow"
       }
     }
