@@ -10,6 +10,10 @@ Local verification on 2026-11-05 passed 50 tests, 12 production Chromium flows, 
 
 Six synthetic production views were visually checked: sign-in, overview, node details, revision history, agent connections and consent. A browser configured with a different locale still received English interface text and dates. An invalid consent request displayed the English recovery message. These checks do not claim an actual Dot connection.
 
+A real-clone acceptance run for `4466c56` passed empty installation, two independent HTTP MCP clients sharing saved content, a concurrent-write conflict, production-browser read-back, process restart, external-directory backup/restore and an upgrade from `e557bab`. The upgrade comparison checks stored revision content and metadata, so translated display summaries cannot conceal a history rewrite.
+
+[GitHub CI for the verified release code](https://github.com/berkinduz/mefagram/actions/runs/42009544411) passed all 53 tests, including native PostgreSQL, and all 12 production Chromium flows on Linux/Node 24. Typecheck, lint, build and bundle privacy also passed. Subsequent release bookkeeping changes only this verification document.
+
 ## Community readiness — v0.1.1
 
 The repository is intended for a developer running their own single-owner local or private hosted workspace. No maintainer account, personal deployment, model API key or paid canvas feature is required. One owner’s agents connect to that installation’s authenticated MCP endpoint; the browser reads the same canonical data.
@@ -49,7 +53,7 @@ Its assertions cover:
 3. A fresh production browser signs in and displays the saved note.
 4. Stop/restart the actual server, then reread the saved revision through MCP and another browser session.
 5. Use a custom absolute database directory outside the checkout; back up that entire stopped directory together with credentials/configuration, move the originals aside, restore the copies, and verify the original agent credential and browser login against the restored production server.
-6. Clone previous commit `e557bab`, bootstrap and customize its sample, switch to the candidate commit, run `npm ci` and setup again, then compare owner, login, token, secret hashes, diagram content and complete revision metadata.
+6. Clone previous commit `e557bab`, bootstrap and customize its sample, switch to the candidate commit, run `npm ci` and setup again, then compare owner, login, token, secret hashes, diagram content and complete stored revision content/metadata.
 
 The command writes `result.json`, `commands.log` and synthetic screenshots in its printed private evidence directory. These are local evidence, not release assets. On 2026-11-04, acceptance passed on macOS/Node 24 for commit `4429312`, including external custom-directory backup restoration and the actual `e557bab` upgrade. The earlier `4dd6bcb` acceptance also passed with the default database directory. Both exercised two real HTTP MCP clients, actual production process restarts and fresh Chromium logins/read-back. One independent portable-release reviewer identified a custom-directory backup omission and a shell/environment preservation bug; both were fixed and verified before release. [GitHub CI for the verified application commit](https://github.com/berkinduz/mefagram/actions/runs/41845627646) passed on Linux/Node 24, including all 47 tests (three on real PostgreSQL), all 12 production Chromium flows, typecheck, lint, build and bundle privacy. Later release bookkeeping changes affect documentation only.
 
