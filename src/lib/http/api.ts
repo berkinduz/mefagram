@@ -157,6 +157,25 @@ export function createApiHandler(context: ApiContext) {
         if (
           action === "export" &&
           request.method === "GET" &&
+          url.searchParams.get("format") === "svg"
+        )
+          return new Response(
+            await service.svg(
+              identity.userId,
+              id,
+              url.searchParams.get("scope"),
+            ),
+            {
+              headers: {
+                "Content-Type": "image/svg+xml; charset=utf-8",
+                "Cache-Control": "private, no-store",
+                "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
+              },
+            },
+          );
+        if (
+          action === "export" &&
+          request.method === "GET" &&
           url.searchParams.get("format") === "mermaid"
         )
           return new Response(await service.mermaid(identity.userId, id), {

@@ -328,17 +328,29 @@ export function createMcpEndpoint(context: ApiContext) {
             {
               title: "Export a diagram",
               description:
-                "Export the complete diagram. format json (default) is the lossless Mefagram format with notes, sources and stable IDs; mermaid returns a flowchart for pull requests, READMEs and chats (labels and structure only).",
+                "Export the complete diagram. format json (default) is the lossless Mefagram format with notes, sources and stable IDs; mermaid returns a flowchart for pull requests, READMEs and chats (labels and structure only); svg returns a standalone image of the overview, or of one phase with scopeId, laid out like the workspace (write it to a file such as docs/diagrams/<name>.svg).",
               inputSchema: z.object({
                 id: idSchema,
-                format: z.enum(["json", "mermaid"]).optional(),
+                format: z.enum(["json", "mermaid", "svg"]).optional(),
                 direction: z.enum(["LR", "TD"]).optional(),
+                scopeId: idSchema
+                  .optional()
+                  .describe("svg only: draw this phase instead of the overview."),
               }),
               annotations: annotations(true),
             },
             (args) =>
               run(async () =>
-                args.format === "mermaid"
+                args.format === "svg"
+                  ? {
+                      format: "svg",
+                      svg: await service.svg(
+                        identity.userId,
+                        args.id,
+                        args.scopeId,
+                      ),
+                    }
+                  : args.format === "mermaid"
                   ? {
                       format: "mermaid",
                       mermaid: await service.mermaid(

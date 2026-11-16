@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Check,
   Copy,
+  ImageDown,
   ChevronRight,
   Download,
   Eye,
@@ -712,6 +713,18 @@ export function Workspace({
                           <Copy size={15} />
                           Copy as Mermaid
                         </button>
+                        <a
+                          role="menuitem"
+                          className="menu-link"
+                          href={`/api/diagrams/${record.id}/export?format=svg${
+                            scopeId ? `&scope=${encodeURIComponent(scopeId)}` : ""
+                          }`}
+                          download={`${record.title.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "diagram"}.svg`}
+                          onClick={() => setMenu(false)}
+                        >
+                          <ImageDown size={15} />
+                          Download SVG
+                        </a>
                         <button
                           role="menuitem"
                           onClick={async () => {

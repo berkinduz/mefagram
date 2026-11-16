@@ -8,6 +8,7 @@ import { DiagramRepository, recordContent } from "./repository";
 import { englishRevisionSummary } from "./revision-summary";
 import { mermaidTitle, parseMermaid, toMermaid } from "./mermaid";
 import { publish } from "@/lib/http/events";
+import { toSvg } from "@/lib/graph/svg";
 import {
   createDiagramSchema,
   exportSchema,
@@ -271,6 +272,13 @@ export class DiagramService {
       },
       mutationId,
     );
+  }
+
+  async svg(ownerId: string, id: string, scopeId?: string | null) {
+    const record = await this.get(ownerId, id);
+    if (scopeId && !record.document.nodes.some((node) => node.id === scopeId))
+      throw new DiagramError("VALIDATION_ERROR", `Node not found: ${scopeId}`);
+    return toSvg(record, { scopeId });
   }
 
   async mermaid(ownerId: string, id: string, direction?: "LR" | "TD") {

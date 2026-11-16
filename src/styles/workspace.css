@@ -281,6 +281,18 @@
   border-radius: 5px;
   color: #64758e;
 }
+.menu-popover > a.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  width: 100%;
+  padding: 10px 9px;
+  border-radius: 5px;
+  color: #64758e;
+  text-decoration: none;
+}
+.menu-popover > a.menu-link:hover,
 .menu-popover > button:hover {
   background: #f1f4fa;
   color: var(--accent);
