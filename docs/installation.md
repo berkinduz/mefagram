@@ -17,7 +17,7 @@ Open `http://127.0.0.1:3000`. There is no login. The workspace belongs to whoeve
 
 New installations start empty. For the optional fictional Relay newsletter workflow, stop the app and run `npm run setup -- --example newsletter`, then start it again. Repeating this command reuses the original sample creation; edits are preserved and no duplicate is created. You can also choose the sample from the empty workspace.
 
-After the initial build, `npm start` reopens the saved workspace. `npm run dev` runs the development server. Keep one Node process per local PGlite directory. If port 3000 is occupied, start with `npm start -- --port 3200` and use that port in your MCP client configuration (including `.mcp.json`).
+After the initial build, `npm start` reopens the saved workspace. `npm run dev` runs the development server. Keep one Node process per local PGlite directory. If port 3000 is occupied, start with `npm start -- --port 3200` and use that port in your MCP client configuration (including `.mcp.json` and `.codex/config.toml`).
 
 Never bind the server to another interface (`--hostname 0.0.0.0`) or expose it through a tunnel or reverse proxy. Without accounts, anyone who reaches it can read and change every diagram.
 
