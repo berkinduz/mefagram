@@ -1,13 +1,12 @@
 import { afterAll, describe, expect, test } from "vitest";
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "dotenv";
 import { createDatabase } from "@/lib/db";
-import { createAuth } from "@/lib/auth/server";
-import { PersonalTokenService } from "@/lib/auth/tokens";
+import { LOCAL_OWNER } from "@/lib/db/migrate";
 import { DiagramService } from "@/lib/diagrams/service";
 
 const root = resolve(import.meta.dirname, "..");
@@ -61,11 +60,7 @@ async function setup(
 }
 
 async function saved(cwd: string) {
-  const config = parse(await readFile(join(cwd, ".env.local")));
-  const access = JSON.parse(
-    await readFile(join(cwd, ".mefagram/local-access.json"), "utf8"),
-  );
-  return { config, access };
+  return { config: parse(await readFile(join(cwd, ".env.local"))) };
 }
 
 afterAll(async () => {
@@ -74,77 +69,128 @@ afterAll(async () => {
 });
 
 describe("portable setup through the real CLI", () => {
-  test("creates an empty private workspace with generic defaults and usable credentials", async () => {
+  test("creates an empty private workspace with generic defaults and no credentials", async () => {
     const cwd = await directory();
     expect(await setup(cwd)).toMatchObject({ code: 0 });
-    const { config, access } = await saved(cwd);
-    expect(access.email).toBe("owner@mefagram.local");
-    expect(config.BETTER_AUTH_SECRET.length).toBeGreaterThanOrEqual(32);
+    const { config } = await saved(cwd);
+    expect(config).toEqual({ MEFAGRAM_DATA_DIR: ".mefagram/db" });
     const db = await createDatabase({
       dataDir: join(cwd, config.MEFAGRAM_DATA_DIR),
     });
     try {
-      const owners = await db.query('SELECT id, name, email FROM "user"');
-      expect(owners.rows).toHaveLength(1);
-      expect(owners.rows[0]).toMatchObject({
-        name: "Mefagram owner",
-        email: access.email,
-      });
+      expect(await new DiagramService(db).list(LOCAL_OWNER)).toEqual([]);
       expect(
-        await new DiagramService(db).list(owners.rows[0].id as string),
-      ).toEqual([]);
-      expect(
-        (await new PersonalTokenService(db).verify(access.agentToken))?.userId,
-      ).toBe(owners.rows[0].id);
-      const auth = createAuth(db, {
-        baseURL: access.baseURL,
-        secret: config.BETTER_AUTH_SECRET,
-        setupKey: config.MEFAGRAM_SETUP_KEY,
-        ownerEmail: access.email,
-      });
-      const signedIn = await auth.api.signInEmail({
-        body: { email: access.email, password: access.password },
-      });
-      expect(signedIn.user.id).toBe(owners.rows[0].id);
+        (await db.query("SELECT to_regclass('personal_tokens') AS t")).rows[0].t,
+      ).toBeNull();
     } finally {
       await db.close();
     }
-    for (const path of [".env.local", ".mefagram/local-access.json"])
-      expect((await stat(join(cwd, path))).mode & 0o777).toBe(0o600);
+    expect((await stat(join(cwd, ".env.local"))).mode & 0o777).toBe(0o600);
+    await expect(
+      stat(join(cwd, ".mefagram/local-access.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
   });
 
-  test("accepts explicit identity options and persists environment-only storage settings", async () => {
+  test("persists environment-only storage settings", async () => {
     const cwd = await directory();
-    const result = await setup(
-      cwd,
-      ["--name", "Alex Example", "--email", "ALEX@example.com"],
-      {
-        MEFAGRAM_OWNER_NAME: "Environment default",
-        MEFAGRAM_OWNER_EMAIL: "environment@example.com",
-        MEFAGRAM_DATA_DIR: ".mefagram/custom database",
-        BETTER_AUTH_URL: "http://localhost:3210",
-      },
-    );
+    const result = await setup(cwd, [], {
+      MEFAGRAM_DATA_DIR: ".mefagram/custom database",
+    });
     expect(result).toMatchObject({ code: 0 });
-    const { config, access } = await saved(cwd);
-    expect(config.MEFAGRAM_DATA_DIR).toBe(".mefagram/custom database");
-    expect(config.MEFAGRAM_OWNER_EMAIL).toBe("alex@example.com");
-    expect(config.MEFAGRAM_OWNER_NAME).toBe("Alex Example");
-    expect(access.baseURL).toBe("http://localhost:3210");
+    expect((await saved(cwd)).config.MEFAGRAM_DATA_DIR).toBe(
+      ".mefagram/custom database",
+    );
     expect(await setup(cwd)).toMatchObject({ code: 0 });
-    const db = await createDatabase({
-      dataDir: join(cwd, config.MEFAGRAM_DATA_DIR),
-    });
+    expect((await saved(cwd)).config.MEFAGRAM_DATA_DIR).toBe(
+      ".mefagram/custom database",
+    );
+    await stat(join(cwd, ".mefagram/custom database"));
+  });
+
+  test("moves an account-based workspace to the local owner without losing content, history or retries", async () => {
+    const cwd = await directory();
+    const dataDir = join(cwd, ".mefagram/db");
+    await mkdir(dataDir, { recursive: true });
+    // Recreate the state left by a 0.1.x install: diagrams owned by a signed-in
+    // user, a personal token table and the old secrets/credentials files.
+    const legacy = await createDatabase({ dataDir });
+    const legacyOwner = "legacy-user-id";
+    let created;
+    let edited;
     try {
-      expect((await db.query('SELECT name, email FROM "user"')).rows).toEqual([
-        { name: "Alex Example", email: "alex@example.com" },
-      ]);
+      await legacy.query(
+        "DELETE FROM mefagram_migrations WHERE id = 'local-owner-v1'",
+      );
+      await legacy.query(
+        "CREATE TABLE personal_tokens (id TEXT PRIMARY KEY, token_hash TEXT)",
+      );
+      const service = new DiagramService(legacy);
+      created = await service.create(
+        legacyOwner,
+        {
+          title: "Account-era map",
+          document: {
+            schemaVersion: 1,
+            nodes: [{ id: "kept", label: "Kept node" }],
+            edges: [],
+          },
+        },
+        "legacy-create",
+      );
+      edited = await service.patch(
+        legacyOwner,
+        created.id,
+        1,
+        [{ op: "update_node", id: "kept", changes: { notes: "Mine" } }],
+        "legacy-edit",
+      );
+    } finally {
+      await legacy.close();
+    }
+    await writeFile(
+      join(cwd, ".env.local"),
+      "BETTER_AUTH_URL=http://127.0.0.1:3000\nBETTER_AUTH_SECRET=old-secret-old-secret-old-secret-old\nMEFAGRAM_SETUP_KEY=old-setup-key-old-setup-key-old-setup\nMEFAGRAM_OWNER_EMAIL=owner@mefagram.local\nMEFAGRAM_DATA_DIR=.mefagram/db\nCUSTOM_SETTING=keep-me\n",
+    );
+    await writeFile(
+      join(cwd, ".mefagram/local-access.json"),
+      JSON.stringify({ email: "owner@mefagram.local", password: "old" }),
+    );
+    const result = await setup(cwd);
+    expect(result).toMatchObject({ code: 0 });
+    expect(result.output).toContain("Removed obsolete credentials file");
+    expect((await saved(cwd)).config).toEqual({
+      MEFAGRAM_DATA_DIR: ".mefagram/db",
+      CUSTOM_SETTING: "keep-me",
+    });
+    await expect(
+      stat(join(cwd, ".mefagram/local-access.json")),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+    const db = await createDatabase({ dataDir });
+    try {
+      const service = new DiagramService(db);
+      expect(await service.get(LOCAL_OWNER, created.id)).toEqual(edited);
+      expect(await service.revisions(LOCAL_OWNER, created.id)).toHaveLength(2);
+      // An agent retrying a request from before the upgrade gets its
+      // original result instead of a duplicate.
+      expect(
+        await service.patch(
+          LOCAL_OWNER,
+          created.id,
+          1,
+          [{ op: "update_node", id: "kept", changes: { notes: "Mine" } }],
+          "legacy-edit",
+        ),
+      ).toEqual(edited);
+      expect(await service.list(legacyOwner)).toEqual([]);
+      expect(
+        (await db.query("SELECT to_regclass('personal_tokens') AS t")).rows[0].t,
+      ).toBeNull();
     } finally {
       await db.close();
     }
   });
 
-  test("adds the optional sample once and preserves edited records, history and credentials on repeat setup", async () => {
+  test("adds the optional sample once and preserves edited records and history on repeat setup", async () => {
     const cwd = await directory();
     expect(await setup(cwd)).toMatchObject({ code: 0 });
     const before = await saved(cwd);
@@ -163,9 +209,8 @@ describe("portable setup through the real CLI", () => {
       dataDir: join(cwd, before.config.MEFAGRAM_DATA_DIR),
     });
     let id = "";
-    let ownerId = "";
+    const ownerId = LOCAL_OWNER;
     try {
-      ownerId = (await db.query('SELECT id FROM "user"')).rows[0].id as string;
       const service = new DiagramService(db);
       const maps = await service.list(ownerId);
       expect(maps).toHaveLength(1);
@@ -203,9 +248,6 @@ describe("portable setup through the real CLI", () => {
         map.document.nodes.find((node) => node.id === "ideas")?.notes,
       ).toBe("Preserve my own research.");
       expect(await service.revisions(ownerId, id)).toHaveLength(2);
-      expect(
-        await new PersonalTokenService(reopened).list(ownerId),
-      ).toHaveLength(1);
     } finally {
       await reopened.close();
     }
@@ -218,10 +260,9 @@ describe("portable setup through the real CLI", () => {
     const db = await createDatabase({
       dataDir: join(cwd, before.config.MEFAGRAM_DATA_DIR),
     });
-    let ownerId = "";
+    const ownerId = LOCAL_OWNER;
     let id = "";
     try {
-      ownerId = (await db.query('SELECT id FROM "user"')).rows[0].id as string;
       const service = new DiagramService(db);
       const original = await service.create(
         ownerId,
@@ -271,20 +312,6 @@ describe("portable setup through the real CLI", () => {
     }
   });
 
-  test("refuses a different owner without rewriting working configuration or credentials", async () => {
-    const cwd = await directory();
-    expect(await setup(cwd)).toMatchObject({ code: 0 });
-    const before = await saved(cwd);
-    const fileBefore = await readFile(join(cwd, ".env.local"), "utf8");
-    const result = await setup(cwd, [], {
-      MEFAGRAM_OWNER_EMAIL: "different@example.com",
-    });
-    expect(result.code).not.toBe(0);
-    expect(result.output).toContain("different owner");
-    expect(await saved(cwd)).toEqual(before);
-    expect(await readFile(join(cwd, ".env.local"), "utf8")).toBe(fileBefore);
-  });
-
   test("bootstraps from the public example environment and preserves unrelated settings", async () => {
     const cwd = await directory();
     await writeFile(
@@ -293,10 +320,10 @@ describe("portable setup through the real CLI", () => {
         "\nCUSTOM_SETTING=keep-me\n",
     );
     expect(await setup(cwd)).toMatchObject({ code: 0 });
-    const { config } = await saved(cwd);
-    expect(config.BETTER_AUTH_SECRET).not.toContain("replace");
-    expect(config.MEFAGRAM_SETUP_KEY).not.toContain("replace");
-    expect(config.CUSTOM_SETTING).toBe("keep-me");
+    expect((await saved(cwd)).config).toEqual({
+      MEFAGRAM_DATA_DIR: ".mefagram/db",
+      CUSTOM_SETTING: "keep-me",
+    });
   });
 
   test("documents options without creating a database and rejects invalid options", async () => {
@@ -308,7 +335,7 @@ describe("portable setup through the real CLI", () => {
       code: "ENOENT",
     });
     expect((await setup(cwd, ["--example", "unknown"])).code).not.toBe(0);
-    expect((await setup(cwd, ["--email", "invalid-email"])).code).not.toBe(0);
+    expect((await setup(cwd, ["--email", "removed@example.com"])).code).not.toBe(0);
     await expect(stat(join(cwd, ".env.local"))).rejects.toMatchObject({
       code: "ENOENT",
     });
@@ -317,19 +344,15 @@ describe("portable setup through the real CLI", () => {
   test("keeps literal dollar signs and backslashes consistent with Next.js environment loading", async () => {
     const cwd = await directory();
     const dataDir = ".mefagram/$cache\\records";
-    const name = 'Alex "$owner"';
     expect(
-      await setup(cwd, [], {
-        MEFAGRAM_DATA_DIR: dataDir,
-        MEFAGRAM_OWNER_NAME: name,
-      }),
+      await setup(cwd, [], { MEFAGRAM_DATA_DIR: dataDir }),
     ).toMatchObject({ code: 0 });
     const output: string[] = [];
     const child = spawn(
       process.execPath,
       [
         "-e",
-        "const m=require(process.argv[1]);const r=m.loadEnvConfig(process.argv[2]);console.log(JSON.stringify({name:r.combinedEnv.MEFAGRAM_OWNER_NAME,dataDir:r.combinedEnv.MEFAGRAM_DATA_DIR}));",
+        "const m=require(process.argv[1]);const r=m.loadEnvConfig(process.argv[2]);console.log(JSON.stringify({dataDir:r.combinedEnv.MEFAGRAM_DATA_DIR}));",
         fileURLToPath(import.meta.resolve("@next/env")),
         cwd,
       ],
@@ -344,37 +367,24 @@ describe("portable setup through the real CLI", () => {
       );
       child.on("error", reject);
     });
-    expect(JSON.parse(output.join("").trim())).toEqual({ name, dataDir });
+    expect(JSON.parse(output.join("").trim())).toEqual({ dataDir });
     expect(await setup(cwd)).toMatchObject({ code: 0 });
   });
 
-  test("preserves saved settings also supplied by the shell and persists the stateless guard", async () => {
+  test("preserves saved settings also supplied by the shell and drops obsolete ones", async () => {
     const cwd = await directory();
     await writeFile(
       join(cwd, ".env.local"),
       "CUSTOM_SETTING=saved-value\nMEFAGRAM_REQUIRE_DATABASE_URL=true\n",
     );
     expect(
-      await setup(cwd, [], {
-        CUSTOM_SETTING: "shell-value",
-        MEFAGRAM_REQUIRE_DATABASE_URL: "true",
-      }),
+      await setup(cwd, [], { CUSTOM_SETTING: "shell-value" }),
     ).toMatchObject({ code: 0 });
-    expect((await saved(cwd)).config).toMatchObject({
+    expect((await saved(cwd)).config).toEqual({
       CUSTOM_SETTING: "shell-value",
-      MEFAGRAM_REQUIRE_DATABASE_URL: "true",
+      MEFAGRAM_DATA_DIR: ".mefagram/db",
     });
     expect(await setup(cwd)).toMatchObject({ code: 0 });
-    expect((await saved(cwd)).config).toMatchObject({
-      CUSTOM_SETTING: "shell-value",
-      MEFAGRAM_REQUIRE_DATABASE_URL: "true",
-    });
-    const envOnly = await directory();
-    expect(
-      await setup(envOnly, [], { MEFAGRAM_REQUIRE_DATABASE_URL: "true" }),
-    ).toMatchObject({ code: 0 });
-    expect((await saved(envOnly)).config.MEFAGRAM_REQUIRE_DATABASE_URL).toBe(
-      "true",
-    );
+    expect((await saved(cwd)).config.CUSTOM_SETTING).toBe("shell-value");
   });
 });

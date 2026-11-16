@@ -1,10 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { createDatabase, type Database } from "@/lib/db";
 import { DiagramService } from "@/lib/diagrams/service";
-import { createAuth } from "@/lib/auth/server";
-import { PersonalTokenService } from "@/lib/auth/tokens";
+import { LOCAL_OWNER } from "@/lib/db/migrate";
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)(
   "native Postgres integration (isolated test database)",
@@ -12,7 +11,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
     let admin: Pool;
     let db: Database;
     let connectionString: string;
-    let ownerId: string;
+    const ownerId = LOCAL_OWNER;
     const database = `mefagram_test_${randomUUID().replaceAll("-", "")}`;
     beforeAll(async () => {
       admin = new Pool({
@@ -39,39 +38,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       }
     });
 
-    test("bootstraps real Postgres auth, verifies a token and persists a diagram", async () => {
-      const setupKey = randomBytes(32).toString("hex");
-      const auth = createAuth(db, {
-        baseURL: "http://127.0.0.1:3300",
-        ownerEmail: "postgres-test@mefagram.local",
-        secret: randomBytes(40).toString("hex"),
-        setupKey,
-      });
-      const password = randomBytes(24).toString("base64url");
-      ownerId = (
-        await auth.api.signUpEmail({
-          body: {
-            name: "Postgres test",
-            email: "postgres-test@mefagram.local",
-            password,
-          },
-          headers: new Headers({ "x-mefagram-setup-key": setupKey }),
-        })
-      ).user.id;
-      expect(
-        (
-          await auth.api.signInEmail({
-            body: { email: "postgres-test@mefagram.local", password },
-          })
-        ).user.id,
-      ).toBe(ownerId);
-      const tokens = new PersonalTokenService(db);
-      const issued = await tokens.create(ownerId, {
-        name: "Postgres client",
-        scopes: ["diagrams:read", "diagrams:write"],
-        expiresInDays: 1,
-      });
-      expect((await tokens.verify(issued.token))?.userId).toBe(ownerId);
+    test("migrates real Postgres and persists an owner-scoped diagram", async () => {
       const service = new DiagramService(db);
       const saved = await service.create(
         ownerId,

@@ -1,66 +1,34 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Check,
   Copy,
-  KeyRound,
-  Plus,
   RotateCcw,
   ShieldCheck,
-  Trash2,
 } from "lucide-react";
 import { Dialog } from "./dialog";
 import { FormError } from "./editors";
 import { api } from "@/lib/http/client";
 import type { DiagramRecord, DiagramRevision } from "@/lib/diagrams/schema";
-import type { DiagramScope } from "@/lib/auth/tokens";
-
-interface TokenSummary {
-  id: string;
-  name: string;
-  scopes: DiagramScope[];
-  expiresAt: string;
-  revoked: boolean;
-}
 
 export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
-  const [tokens, setTokens] = useState<TokenSummary[]>([]);
   const [endpoint, setEndpoint] = useState("");
-  const [local, setLocal] = useState(true);
-  const [newToken, setNewToken] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("Codex agent");
-  const [permission, setPermission] = useState("write");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
-  const load = useCallback(
-    () =>
-      Promise.all([
-        api<TokenSummary[]>("/api/tokens"),
-        api<{ mcpUrl: string; storage: string }>("/api/status"),
-      ])
-        .then(([rows, status]) => {
-          setTokens(rows);
-          setEndpoint(status.mcpUrl);
-          setLocal(
-            ["localhost", "127.0.0.1", "[::1]"].includes(
-              new URL(status.mcpUrl).hostname,
-            ),
-          );
-        })
-        .catch((failure) =>
-          setError(
-            failure instanceof Error
-              ? failure.message
-              : "Could not load connections.",
-          ),
-        ),
-    [],
-  );
   useEffect(() => {
-    void load();
-  }, [load]);
+    api<{ mcpUrl: string }>("/api/status")
+      .then((status) => setEndpoint(status.mcpUrl))
+      .catch((failure) =>
+        setError(
+          failure instanceof Error
+            ? failure.message
+            : "Could not load the connection details.",
+        ),
+      );
+  }, []);
+  const command = endpoint
+    ? `claude mcp add --transport http --scope user mefagram ${endpoint}`
+    : "";
   async function copy(value: string, which: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -72,7 +40,7 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
   return (
     <Dialog
       title="Agent connections"
-      description="Your agents can read and update this workspace using MCP tools."
+      description="Agents on this computer can read and update this workspace using MCP tools."
       onClose={onClose}
       wide
     >
@@ -90,161 +58,32 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
           </div>
           <input readOnly aria-label="MCP endpoint" value={endpoint} />
           <p className="field-help">
-            {local
-              ? "This address works on this computer. Cloud agents need the app to run on a reachable server."
-              : "Connect to this endpoint from an OAuth-compatible agent. Authorize access with your account."}
+            Streamable HTTP, no credentials. It works while the app runs on
+            this computer.
           </p>
         </div>
-        <div className="section-row connection-heading">
-          <h3>Personal access tokens</h3>
-          <button
-            className="button small"
-            onClick={() => {
-              setCreating(!creating);
-              setNewToken("");
-            }}
-          >
-            <Plus size={14} />
-            Create token
-          </button>
-        </div>
-        <p className="field-help">
-          For agents that support bearer tokens. Tokens only grant access to your diagrams.
-        </p>
-        {creating && (
-          <form
-            className="token-form form-stack"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setBusy(true);
-              setError("");
-              try {
-                const issued = await api<{ token: string }>("/api/tokens", {
-                  method: "POST",
-                  body: {
-                    name,
-                    scopes:
-                      permission === "write"
-                        ? ["diagrams:read", "diagrams:write"]
-                        : ["diagrams:read"],
-                    expiresInDays: 30,
-                  },
-                });
-                setNewToken(issued.token);
-                setCreating(false);
-                await load();
-              } catch (failure) {
-                setError(
-                  failure instanceof Error
-                    ? failure.message
-                    : "Could not create the token.",
-                );
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            <div className="form-two">
-              <label>
-                Connection name
-                <input
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  maxLength={100}
-                  required
-                />
-              </label>
-              <label>
-                Permission
-                <select
-                  value={permission}
-                  onChange={(event) => setPermission(event.target.value)}
-                >
-                  <option value="read">Read only</option>
-                  <option value="write">Read and edit</option>
-                </select>
-              </label>
-            </div>
-            <div className="dialog-actions">
-              <span className="field-help">Valid for 30 days.</span>
-              <button className="button primary" disabled={busy}>
-                Create access token
-              </button>
-            </div>
-          </form>
-        )}
-        {newToken && (
-          <div className="new-token">
-            <strong>
-              <KeyRound size={16} />
-              Save your token now
-            </strong>
-            <p>This value will not be shown again.</p>
-            <div className="copy-field">
-              <input
-                readOnly
-                aria-label="New access token"
-                value={newToken}
-              />
-              <button
-                className="button small"
-                onClick={() => copy(newToken, "token")}
-              >
-                {copied === "token" ? <Check size={15} /> : <Copy size={15} />}
-                Copy
-              </button>
-            </div>
-          </div>
-        )}
-        <div className="token-list">
-          {tokens.map((token) => (
-            <div
-              key={token.id}
-              className={`token-row ${token.revoked ? "token-revoked" : ""}`}
+        <div className="connection-endpoint">
+          <div className="section-row">
+            <h3>Claude Code</h3>
+            <button
+              className="text-button"
+              onClick={() => copy(command, "command")}
             >
-              <KeyRound size={16} />
-              <div>
-                <strong>{token.name}</strong>
-                <span>
-                  {token.revoked
-                    ? "Revoked"
-                    : `${token.scopes.includes("diagrams:write") ? "Read and edit" : "Read only"} · Expires ${new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(token.expiresAt))}`}
-                </span>
-              </div>
-              {!token.revoked && (
-                <button
-                  className="icon-button danger"
-                  disabled={busy}
-                  aria-label={`Revoke ${token.name} token`}
-                  title="Revoke access"
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await api(`/api/tokens/${token.id}`, {
-                        method: "DELETE",
-                      });
-                      await load();
-                    } catch (failure) {
-                      setError(
-                        failure instanceof Error
-                          ? failure.message
-                          : "Could not revoke access.",
-                      );
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </div>
-          ))}
+              {copied === "command" ? <Check size={14} /> : <Copy size={14} />}
+              Copy
+            </button>
+          </div>
+          <input readOnly aria-label="Claude Code command" value={command} />
+          <p className="field-help">
+            Run once in a terminal to use Mefagram from every project. Inside
+            this repository, the bundled .mcp.json connects automatically.
+          </p>
         </div>
         <FormError error={error} />
         <p className="connection-privacy">
           <ShieldCheck size={16} />
-          Keep your token out of source code and diagram notes.
+          Only programs on this computer can connect. Requests from websites
+          are refused.
         </p>
       </div>
     </Dialog>

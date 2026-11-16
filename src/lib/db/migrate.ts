@@ -29,14 +29,16 @@ CREATE TABLE IF NOT EXISTS diagram_mutations (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (owner_id, mutation_key)
 );
-CREATE TABLE IF NOT EXISTS personal_tokens (
-  id TEXT PRIMARY KEY,
-  owner_id TEXT NOT NULL,
-  name TEXT NOT NULL,
-  token_hash TEXT NOT NULL UNIQUE,
-  scopes JSONB NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  revoked_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+`;
+
+export const LOCAL_OWNER = "local";
+
+export const localOwnerMigration = `
+UPDATE diagram_mutations m SET owner_id = '${LOCAL_OWNER}'
+WHERE owner_id <> '${LOCAL_OWNER}' AND NOT EXISTS (
+  SELECT 1 FROM diagram_mutations l
+  WHERE l.owner_id = '${LOCAL_OWNER}' AND l.mutation_key = m.mutation_key
 );
+UPDATE diagrams SET owner_id = '${LOCAL_OWNER}' WHERE owner_id <> '${LOCAL_OWNER}';
+DROP TABLE IF EXISTS personal_tokens;
 `;

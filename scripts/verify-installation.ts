@@ -4,7 +4,6 @@ import {
   appendFile,
   cp,
   mkdtemp,
-  readFile,
   rename,
   writeFile,
 } from "node:fs/promises";
@@ -94,7 +93,7 @@ async function start(cwd: string) {
     try {
       if (
         (
-          await fetch(`${baseURL}/sign-in`, {
+          await fetch(`${baseURL}/`, {
             signal: AbortSignal.timeout(1000),
           })
         ).ok
@@ -123,23 +122,13 @@ async function stop() {
   });
 }
 
-async function credentials(cwd: string) {
-  return JSON.parse(
-    await readFile(join(cwd, ".mefagram/local-access.json"), "utf8"),
-  ) as { email: string; password: string; agentToken: string };
-}
-async function client(cwd: string) {
-  const access = await credentials(cwd);
+async function client() {
   const result = new Client({
     name: "installation-acceptance",
-    version: "0.1.0",
+    version: "0.2.0",
   });
   await result.connect(
-    new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`), {
-      requestInit: {
-        headers: { authorization: `Bearer ${access.agentToken}` },
-      },
-    }),
+    new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`)),
   );
   return result;
 }
@@ -155,12 +144,7 @@ async function call(
   );
   return result.structuredContent as unknown as DiagramRecord;
 }
-async function browserRead(
-  cwd: string,
-  record: DiagramRecord,
-  screenshot: string,
-) {
-  const access = await credentials(cwd);
+async function browserRead(record: DiagramRecord, screenshot: string) {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({
@@ -168,13 +152,6 @@ async function browserRead(
     });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
-    await page.goto(`${baseURL}/sign-in`);
-    await page.getByLabel("Email").fill(access.email);
-    await page.getByLabel("Password", { exact: true }).fill(access.password);
-    await page.getByRole("button", { name: "Open workspace" }).click();
-    await page
-      .getByRole("navigation", { name: "Diagram collection" })
-      .waitFor();
     await page.goto(`${baseURL}/?diagram=${record.id}`);
     await page
       .getByText("Shared agent record", { exact: true })
@@ -192,39 +169,48 @@ async function browserRead(
 }
 
 // Runs using the clone's own source/dependencies, with its database stopped.
-const snapshotScript = `
-import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
+// "prepare" runs on the previous account-based release; "verify" runs on the
+// candidate and checks the content moved intact to the local owner.
+const prepareScript = `
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parse } from 'dotenv';
 import { createDatabase } from '../src/lib/db';
-import { createAuth } from '../src/lib/auth/server';
-import { PersonalTokenService } from '../src/lib/auth/tokens';
 import { DiagramService } from '../src/lib/diagrams/service';
 const config = parse(await readFile('.env.local'));
-const access = JSON.parse(await readFile('.mefagram/local-access.json','utf8'));
 const db = await createDatabase({dataDir:resolve(config.MEFAGRAM_DATA_DIR)});
 try {
-  const owner=(await db.query('SELECT id,name,email FROM "user"')).rows[0];
+  const owner=(await db.query('SELECT id FROM "user"')).rows[0];
   const service=new DiagramService(db);
-  if(process.argv[2]==='prepare') {
-    const sample=(await service.list(owner.id))[0];
-    await service.patch(owner.id,sample.id,sample.revision,[{op:'update_node',id:'problem',changes:{notes:'Preserved upgrade research'}}],'upgrade-fixture');
-  }
-  assert.equal((await new PersonalTokenService(db).verify(access.agentToken))?.userId,owner.id);
-  const auth=createAuth(db,{baseURL:access.baseURL,ownerEmail:access.email,secret:config.BETTER_AUTH_SECRET,setupKey:config.MEFAGRAM_SETUP_KEY});
-  assert.equal((await auth.api.signInEmail({body:{email:access.email,password:access.password}})).user.id,owner.id);
-  const diagrams=await service.list(owner.id);
-  // Compare stored history, including content, rather than localized read-time summaries.
-  const storedDiagrams=await Promise.all(diagrams.map(async d=>({
+  const sample=(await service.list(owner.id))[0];
+  await service.patch(owner.id,sample.id,sample.revision,[{op:'update_node',id:'problem',changes:{notes:'Preserved upgrade research'}}],'upgrade-fixture');
+  const diagrams=await Promise.all((await service.list(owner.id)).map(async d=>({
     record:await service.get(owner.id,d.id),
     history:(await db.query('SELECT revision,created_at::text AS "createdAt",content,actor,summary FROM diagram_revisions WHERE diagram_id = $1 ORDER BY revision DESC',[d.id])).rows
   })));
-  const snapshot={owner,diagrams:storedDiagrams,credentialHash:createHash('sha256').update(JSON.stringify(access)).digest('hex'),secretHash:createHash('sha256').update(config.BETTER_AUTH_SECRET+config.MEFAGRAM_SETUP_KEY).digest('hex')};
-  if(process.argv[2]==='prepare') await writeFile('.mefagram/upgrade-snapshot.json',JSON.stringify(snapshot));
-  else assert.deepEqual(snapshot,JSON.parse(await readFile('.mefagram/upgrade-snapshot.json','utf8')));
-  console.log('Owner, login, token, diagrams, history and secrets verified.');
+  await writeFile('.mefagram/upgrade-snapshot.json',JSON.stringify(diagrams));
+} finally {await db.close();}
+`;
+const verifyScript = `
+import assert from 'node:assert/strict';
+import { access, readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { parse } from 'dotenv';
+import { createDatabase } from '../src/lib/db';
+import { LOCAL_OWNER } from '../src/lib/db/migrate';
+import { DiagramService } from '../src/lib/diagrams/service';
+const config = parse(await readFile('.env.local'));
+assert.equal(config.BETTER_AUTH_SECRET, undefined);
+await assert.rejects(access('.mefagram/local-access.json'));
+const db = await createDatabase({dataDir:resolve(config.MEFAGRAM_DATA_DIR)});
+try {
+  const service=new DiagramService(db);
+  const diagrams=await Promise.all((await service.list(LOCAL_OWNER)).map(async d=>({
+    record:await service.get(LOCAL_OWNER,d.id),
+    history:(await db.query('SELECT revision,created_at::text AS "createdAt",content,actor,summary FROM diagram_revisions WHERE diagram_id = $1 ORDER BY revision DESC',[d.id])).rows
+  })));
+  assert.deepEqual(diagrams,JSON.parse(await readFile('.mefagram/upgrade-snapshot.json','utf8')));
+  console.log('Diagrams and history moved intact to the local owner; old credentials removed.');
 } finally {await db.close();}
 `;
 
@@ -232,24 +218,13 @@ try {
   const candidate = await run(source, "git", ["rev-parse", "HEAD"]);
   console.log(`Acceptance clones and private logs: ${evidence}`);
   const fresh = await clone("fresh", candidate);
-  await run(
-    fresh,
-    "npm",
-    [
-      "run",
-      "setup",
-      "--",
-      "--name",
-      "Release fixture",
-      "--email",
-      "fixture@example.com",
-    ],
-    { BETTER_AUTH_URL: baseURL, MEFAGRAM_DATA_DIR: externalDataDir },
-  );
+  await run(fresh, "npm", ["run", "setup"], {
+    MEFAGRAM_DATA_DIR: externalDataDir,
+  });
   await run(fresh, "npm", ["run", "build"]);
   await start(fresh);
-  const first = await client(fresh);
-  const second = await client(fresh);
+  const first = await client();
+  const second = await client();
   let saved: DiagramRecord;
   try {
     assert.deepEqual(
@@ -300,14 +275,14 @@ try {
       await call(second, "get_diagram", { id: saved.id }),
       saved,
     );
-    await browserRead(fresh, saved, "fresh-browser.png");
+    await browserRead(saved, "fresh-browser.png");
   } finally {
     await first.close();
     await second.close();
   }
   await stop();
   await start(fresh);
-  const restarted = await client(fresh);
+  const restarted = await client();
   try {
     assert.deepEqual(
       await call(restarted, "get_diagram", { id: saved.id }),
@@ -316,7 +291,7 @@ try {
   } finally {
     await restarted.close();
   }
-  await browserRead(fresh, saved, "restart-browser.png");
+  await browserRead(saved, "restart-browser.png");
   await stop();
   await cp(join(fresh, ".mefagram"), join(evidence, "backup"), {
     recursive: true,
@@ -334,7 +309,7 @@ try {
   await rename(externalDataDir, `${externalDataDir}-before-restore`);
   await cp(join(evidence, "backup-db"), externalDataDir, { recursive: true });
   await start(fresh);
-  const restored = await client(fresh);
+  const restored = await client();
   try {
     assert.deepEqual(
       await call(restored, "get_diagram", { id: saved.id }),
@@ -343,7 +318,7 @@ try {
   } finally {
     await restored.close();
   }
-  await browserRead(fresh, saved, "restored-browser.png");
+  await browserRead(saved, "restored-browser.png");
   await stop();
   console.log(
     "Clean clone, empty setup, two HTTP agents, production browser, restart and backup restoration passed.",
@@ -354,24 +329,23 @@ try {
     MEFAGRAM_OWNER_EMAIL: "upgrade-fixture@example.com",
     BETTER_AUTH_URL: baseURL,
   });
-  await writeFile(join(upgrade, ".mefagram/verify-upgrade.ts"), snapshotScript);
+  await writeFile(join(upgrade, ".mefagram/prepare-upgrade.ts"), prepareScript);
   await run(upgrade, "node", [
     "--import",
     "tsx",
-    ".mefagram/verify-upgrade.ts",
-    "prepare",
+    ".mefagram/prepare-upgrade.ts",
   ]);
   await run(upgrade, "git", ["checkout", "--quiet", candidate]);
   await run(upgrade, "npm", ["ci"]);
   await run(upgrade, "npm", ["run", "setup"]);
+  await writeFile(join(upgrade, ".mefagram/verify-upgrade.ts"), verifyScript);
   await run(upgrade, "node", [
     "--import",
     "tsx",
     ".mefagram/verify-upgrade.ts",
-    "verify",
   ]);
   console.log(
-    "Previous-version upgrade preserved owner, login, token, secrets, edited content and revision history.",
+    "Upgrade from the account-based release preserved edited content and revision history.",
   );
   await writeFile(
     join(evidence, "result.json"),

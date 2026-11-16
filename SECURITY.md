@@ -4,10 +4,14 @@ Please report vulnerabilities through this repository's **Security → Report a 
 
 The latest tagged release is the supported version. This is a small open-source project; response times are not guaranteed.
 
-## Deployment boundary
+## Local boundary
 
-Each installation has one private owner. It is not a public multi-tenant service. Public signup is closed. Human sessions and scoped OAuth/personal tokens access the same ownership-checked diagram service. Agents do not need database or deployment administrator credentials.
+Mefagram has no accounts. It is a single-user workspace for the person using this computer, and the loopback interface is its access control:
 
-Serve remote installations over HTTPS and keep application secrets/database credentials private. Personal tokens revoke immediately. Already-issued OAuth JWT access tokens may remain valid for up to five minutes after grant revocation. JSON export carries the current diagram; full database backups also contain accounts, credentials and history and must remain private.
+- The server listens on `127.0.0.1` only.
+- Every request, including pages and static assets, is refused unless its `Host` is `localhost`, `127.0.0.1` or `[::1]`. This blocks DNS-rebinding pages from reading or changing the workspace.
+- Requests carrying another website's `Origin` are refused, so a page you visit cannot submit changes to the local API or MCP endpoint.
 
-Use a durable local volume for PGlite, with only one Node process opening it. Use an external Postgres database for stateless/serverless hosts. Set `MEFAGRAM_REQUIRE_DATABASE_URL=true` on such hosts; Vercel and Netlify also enforce this automatically. Never let production fall back to ephemeral local files.
+Programs running on the same computer can use the workspace without credentials; that is the intended way for agents to connect. Do not expose the port through a tunnel, reverse proxy or a non-loopback `--hostname`, and do not run it on a shared multi-user machine where other accounts must not see your diagrams.
+
+Use a durable local volume for PGlite, with only one Node process opening it. Database backups contain every diagram and its full history and must remain private.

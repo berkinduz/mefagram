@@ -1,22 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 
-async function login(page: Page) {
-  const access = JSON.parse(
-    await readFile(
-      process.env.MEFAGRAM_TEST_ACCESS_FILE ?? ".mefagram/e2e-access.json",
-      "utf8",
-    ),
-  );
-  await page.goto("/sign-in");
+async function open(page: Page) {
+  await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.getByLabel("Email").fill(access.email);
-  await page.getByLabel("Password", { exact: true }).fill(access.password);
-  await page.getByRole("button", { name: "Open workspace" }).click();
   await expect(
     page.getByRole("navigation", { name: "Diagram collection" }),
   ).toBeVisible();
@@ -25,7 +17,7 @@ async function login(page: Page) {
 test("opens a real saved diagram, drills into a phase and keeps reading mode deliberate", async ({
   page,
 }) => {
-  await login(page);
+  await open(page);
   await page.getByRole("button", { name: /Relay newsletter workflow/ }).click();
   await expect(
     page.getByRole("heading", {
@@ -81,7 +73,7 @@ test("creates, edits and reopens a map from another browser session", async ({
   page,
   browser,
 }) => {
-  await login(page);
+  await open(page);
   const title = `Browser save test ${Date.now()}`;
   await page
     .getByRole("button", { name: "New diagram", exact: true })
@@ -112,7 +104,7 @@ test("creates, edits and reopens a map from another browser session", async ({
   const separate = await browser.newContext();
   try {
     const second = await separate.newPage();
-    await login(second);
+    await open(second);
     await second
       .getByRole("textbox", { name: "Search diagrams" })
       .fill(title);
@@ -126,37 +118,51 @@ test("creates, edits and reopens a map from another browser session", async ({
   }
 });
 
-test("shows an expired login as a sign-in screen instead of exposing the workspace", async ({
+test("opens without a login and refuses rebinding hosts and other websites", async ({
   page,
+  baseURL,
 }) => {
-  await page.goto("/");
-  await expect(
-    page.getByRole("button", { name: "Open workspace" }),
-  ).toBeVisible();
-  const response = await page.request.get("/api/diagrams");
-  expect(response.status()).toBe(401);
+  await open(page);
+  await expect(page.getByRole("button", { name: "Sign out" })).toHaveCount(0);
+  const url = new URL(baseURL!);
+  const status = (path: string, host: string) =>
+    new Promise<number>((resolve, reject) => {
+      const outgoing = httpRequest(
+        { hostname: url.hostname, port: url.port, path, headers: { host } },
+        (response) => {
+          response.resume();
+          resolve(response.statusCode ?? 0);
+        },
+      );
+      outgoing.on("error", reject);
+      outgoing.end();
+    });
+  for (const path of ["/", "/api/diagrams", "/api/mcp"])
+    expect(await status(path, "rebound.example:3100")).toBe(403);
+  expect(await status("/api/diagrams", url.host)).toBe(200);
+  const crossSite = await page.request.post("/api/diagrams", {
+    headers: {
+      origin: "https://evil.example",
+      "idempotency-key": crypto.randomUUID(),
+    },
+    data: {
+      title: "Cross-site write",
+      document: { schemaVersion: 1, nodes: [], edges: [] },
+    },
+  });
+  expect(crossSite.status()).toBe(403);
 });
 
 test("shows real MCP writes in the reader and exports the saved content", async ({
   page,
   baseURL,
 }) => {
-  const access = JSON.parse(
-    await readFile(
-      process.env.MEFAGRAM_TEST_ACCESS_FILE ?? ".mefagram/e2e-access.json",
-      "utf8",
-    ),
-  );
   const client = new Client({
     name: "browser-acceptance-agent",
     version: "1.0.0",
   });
   await client.connect(
-    new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`), {
-      requestInit: {
-        headers: { authorization: `Bearer ${access.agentToken}` },
-      },
-    }),
+    new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`)),
   );
   try {
     expect((await client.listTools()).tools.map((tool) => tool.name)).toContain(
@@ -195,7 +201,7 @@ test("shows real MCP writes in the reader and exports the saved content", async 
       },
     });
     expect(update.isError).not.toBe(true);
-    await login(page);
+    await open(page);
     await page.goto(`/?diagram=${saved.id}`);
     await page
       .getByText("Step added by an agent", { exact: true })
@@ -229,7 +235,7 @@ test("shows real MCP writes in the reader and exports the saved content", async 
 test("keeps a failed form and safely reconciles a lost save response after further edits", async ({
   page,
 }) => {
-  await login(page);
+  await open(page);
   await page.getByRole("button", { name: /Relay newsletter workflow/ }).click();
   await page
     .getByRole("button", { name: "Open Collect ideas phase" })
@@ -275,7 +281,7 @@ test("keeps a failed form and safely reconciles a lost save response after furth
 test("retries an unacknowledged creation without duplicating the diagram", async ({
   page,
 }) => {
-  await login(page);
+  await open(page);
   const title = `New diagram with a lost response ${Date.now()}`;
   await page
     .getByRole("button", { name: "New diagram", exact: true })
@@ -312,12 +318,6 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
   page,
   baseURL,
 }) => {
-  const access = JSON.parse(
-    await readFile(
-      process.env.MEFAGRAM_TEST_ACCESS_FILE ?? ".mefagram/e2e-access.json",
-      "utf8",
-    ),
-  );
   const nodes = Array.from({ length: 6 }, (_, phase) => [
     {
       id: `phase-${phase}`,
@@ -349,7 +349,6 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
   ]).flat();
   const response = await page.request.post(`${baseURL}/api/diagrams`, {
     headers: {
-      authorization: `Bearer ${access.agentToken}`,
       "idempotency-key": crypto.randomUUID(),
     },
     data: {
@@ -359,7 +358,7 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
   });
   expect(response.ok()).toBe(true);
   const saved = await response.json();
-  await login(page);
+  await open(page);
   await page.goto(`/?diagram=${saved.id}`);
   await expect(page.locator(".react-flow__node")).toHaveCount(6);
   await page

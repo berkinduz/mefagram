@@ -1,35 +1,5 @@
-import { test, expect, type BrowserContext, type Page } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
-
-let access: {
-  email: string;
-  password: string;
-  agentToken: string;
-  baseURL: string;
-};
-let cookies: Awaited<ReturnType<BrowserContext["cookies"]>>;
-test.beforeAll(async ({ browser }) => {
-  access = JSON.parse(
-    await readFile(
-      process.env.MEFAGRAM_TEST_ACCESS_FILE ?? ".mefagram/e2e-access.json",
-      "utf8",
-    ),
-  );
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto(`${access.baseURL}/sign-in`);
-  await page.getByLabel("Email").fill(access.email);
-  await page.getByLabel("Password", { exact: true }).fill(access.password);
-  await page.getByRole("button", { name: "Open workspace" }).click();
-  await page
-    .getByRole("navigation", { name: "Diagram collection" })
-    .waitFor();
-  cookies = await context.cookies();
-  await context.close();
-});
-test.beforeEach(async ({ page }) => {
-  await page.context().addCookies(cookies);
-});
 
 async function create(
   page: Page,
@@ -38,7 +8,6 @@ async function create(
 ) {
   const response = await page.request.post("/api/diagrams", {
     headers: {
-      authorization: `Bearer ${access.agentToken}`,
       "idempotency-key": crypto.randomUUID(),
     },
     data: { title, document: { schemaVersion: 1, nodes, edges: [] } },
@@ -167,7 +136,6 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
   await captured.promise;
   const changed = await page.request.patch(`/api/diagrams/${a.id}`, {
     headers: {
-      authorization: `Bearer ${access.agentToken}`,
       "idempotency-key": crypto.randomUUID(),
     },
     data: {
@@ -237,38 +205,4 @@ test("reimports the actual downloaded near-limit JSON file without losing conten
   expect(id).not.toBe(a.id);
   const imported = await (await page.request.get(`/api/diagrams/${id}`)).json();
   expect(imported.document).toEqual(a.document);
-});
-
-test("reports a failed sign-out and only leaves the workspace after successful revocation", async ({
-  page,
-}) => {
-  await page.goto("/");
-  await page
-    .getByRole("navigation", { name: "Diagram collection" })
-    .waitFor();
-  await page.route(
-    "**/api/auth/sign-out",
-    (route) =>
-      route.fulfill({
-        status: 500,
-        contentType: "application/json",
-        body: '{"error":"Synthetic rejection"}',
-      }),
-    { times: 1 },
-  );
-  await page
-    .getByRole("button", { name: "Sign out", exact: true })
-    .click();
-  await expect(
-    page.getByRole("alert").filter({ hasText: "Could not sign out" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Diagram collection" }),
-  ).toBeVisible();
-  expect((await page.request.get("/api/diagrams")).status()).toBe(200);
-  await page
-    .getByRole("button", { name: "Sign out", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/sign-in$/);
-  expect((await page.request.get("/api/diagrams")).status()).toBe(401);
 });

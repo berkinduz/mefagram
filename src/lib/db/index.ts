@@ -1,6 +1,5 @@
 import { resolve } from "node:path";
-import { diagramMigration } from "./migrate";
-import { authMigration } from "./auth-migration";
+import { diagramMigration, localOwnerMigration } from "./migrate";
 
 export interface SqlExecutor {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -13,7 +12,6 @@ export interface Database extends SqlExecutor {
     operation: (transaction: SqlExecutor) => Promise<T>,
   ): Promise<T>;
   close(): Promise<void>;
-  authDb: unknown;
   mode: "local" | "hosted";
 }
 
@@ -22,10 +20,7 @@ export async function createDatabase(
 ): Promise<Database> {
   let database: Database;
   if (options.databaseUrl) {
-    const [{ Pool }, { drizzle }] = await Promise.all([
-      import("pg"),
-      import("drizzle-orm/node-postgres"),
-    ]);
+    const { Pool } = await import("pg");
     const pool = new Pool({
       connectionString: options.databaseUrl,
       max: 5,
@@ -33,7 +28,6 @@ export async function createDatabase(
     });
     database = {
       mode: "hosted",
-      authDb: drizzle(pool),
       query: (sql, parameters) => pool.query(sql, parameters),
       async transaction(operation) {
         const client = await pool.connect();
@@ -52,10 +46,7 @@ export async function createDatabase(
       close: () => pool.end(),
     };
   } else {
-    const [{ PGlite }, { drizzle }] = await Promise.all([
-      import("@electric-sql/pglite"),
-      import("drizzle-orm/pglite"),
-    ]);
+    const { PGlite } = await import("@electric-sql/pglite");
     const client = new PGlite(
       options.dataDir === "memory://"
         ? undefined
@@ -64,7 +55,6 @@ export async function createDatabase(
     await client.waitReady;
     database = {
       mode: "local",
-      authDb: drizzle(client),
       query: (sql, parameters) => client.query(sql, parameters),
       transaction: (operation) =>
         client.transaction((transaction) => operation(transaction)),
@@ -83,16 +73,6 @@ export async function createDatabase(
         "SELECT id FROM mefagram_migrations",
       );
       const ids = new Set(applied.rows.map((row) => row.id));
-      if (!ids.has("auth-v1")) {
-        for (const statement of authMigration
-          .split("--> statement-breakpoint")
-          .filter((value) => value.trim()))
-          await transaction.query(statement);
-        await transaction.query(
-          "INSERT INTO mefagram_migrations (id) VALUES ($1)",
-          ["auth-v1"],
-        );
-      }
       if (!ids.has("diagrams-v1")) {
         for (const statement of diagramMigration
           .split(";")
@@ -101,6 +81,18 @@ export async function createDatabase(
         await transaction.query(
           "INSERT INTO mefagram_migrations (id) VALUES ($1)",
           ["diagrams-v1"],
+        );
+      }
+      // Single-user local mode: diagrams created under the former signed-in
+      // owner move to the fixed local owner. Old account tables are left inert.
+      if (!ids.has("local-owner-v1")) {
+        for (const statement of localOwnerMigration
+          .split(";")
+          .filter((value) => value.trim()))
+          await transaction.query(statement);
+        await transaction.query(
+          "INSERT INTO mefagram_migrations (id) VALUES ($1)",
+          ["local-owner-v1"],
         );
       }
     });
@@ -116,15 +108,6 @@ const globalDatabase = globalThis as typeof globalThis & {
 };
 export function getDatabase() {
   if (!globalDatabase.mefagramDatabase) {
-    if (
-      (process.env.VERCEL ||
-        process.env.NETLIFY ||
-        process.env.MEFAGRAM_REQUIRE_DATABASE_URL === "true") &&
-      !process.env.DATABASE_URL
-    )
-      throw new Error(
-        "Hosted deployments require DATABASE_URL. Local database storage is disabled on serverless hosts.",
-      );
     globalDatabase.mefagramDatabase = createDatabase({
       databaseUrl: process.env.DATABASE_URL,
       dataDir: process.env.MEFAGRAM_DATA_DIR,

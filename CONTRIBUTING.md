@@ -12,14 +12,14 @@ Keep interface text, error messages, documentation and public examples in Englis
 
 1. Fork the repository and create a focused branch.
 2. Preserve the shared MCP/API + database architecture. All agents for one installation use its canonical service. Do not introduce a separate live diagram copy per agent.
-3. Add a reproducing test for data integrity, auth, concurrency or behaviour fixes. Tests should prove the behaviour, using disposable fixtures rather than personal data.
+3. Add a reproducing test for data integrity, local-access, concurrency or behaviour fixes. Tests should prove the behaviour, using disposable fixtures rather than personal data.
 4. Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run build`. The build automatically rejects private workspace files in deployment traces.
 5. For UI, persistence or HTTP changes, install Chromium with `npx playwright install chromium`, then run `MEFAGRAM_TEST_PRODUCTION=1 npm run test:e2e`. On Windows, set that environment variable using your shell's syntax. Run one browser-test invocation at a time.
 6. Describe the problem, resulting behaviour, validation and any limits in the pull request. Keep unrelated formatting/refactors separate.
 
-CI uses an ephemeral PostgreSQL service and standard Ubuntu runners. `TEST_DATABASE_URL` enables the native PostgreSQL tests; they create and remove a uniquely named test database, so the disposable test role needs `CREATEDB` permission. The app uses the database's default `public` schema, including its generated auth foreign keys. Never point test configuration at a personal or production database/server. Without this variable, the three native-PostgreSQL cases are skipped; persistent PGlite tests still run.
+CI uses an ephemeral PostgreSQL service and standard Ubuntu runners. `TEST_DATABASE_URL` enables the native PostgreSQL tests; they create and remove a uniquely named test database, so the disposable test role needs `CREATEDB` permission. The app uses the database's default `public` schema. Never point test configuration at a personal or production database/server. Without this variable, the three native-PostgreSQL cases are skipped; persistent PGlite tests still run.
 
-Browser tests reserve `.mefagram/e2e-*` for disposable data. Keep `.mefagram`, `.env.local`, credentials, access tokens, personal diagram exports and test reports out of Git. Use synthetic examples in issues, screenshots and test fixtures. Never run setup against a local PGlite database already open in another process.
+Browser tests reserve `.mefagram/e2e-*` for disposable data. Keep `.mefagram`, `.env.local`, credentials, personal diagram exports and test reports out of Git. Use synthetic examples in issues, screenshots and test fixtures. Never run setup against a local PGlite database already open in another process.
 
 ## Compatibility
 

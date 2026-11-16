@@ -416,16 +416,6 @@ export function NodeEditor({
           ))}
         </section>
         <FormError error={error} />
-        {error && (
-          <a
-            className="text-link"
-            href="/sign-in"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Sign in in a new tab if needed
-          </a>
-        )}
         {confirmDelete && (
           <p className="form-error">
             Child steps and connections will also be removed. You can restore them from revision history.
