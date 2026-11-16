@@ -7,6 +7,7 @@ import { applyPatch, operationsSchema } from "./patch";
 import { DiagramRepository, recordContent } from "./repository";
 import { englishRevisionSummary } from "./revision-summary";
 import { mermaidTitle, parseMermaid, toMermaid } from "./mermaid";
+import { publish } from "@/lib/http/events";
 import {
   createDiagramSchema,
   exportSchema,
@@ -286,7 +287,7 @@ export class DiagramService {
     validated(z.string().min(1).max(128), mutationId);
     if (!ownerId) throw new DiagramError("UNAUTHORIZED", "Please sign in.", 401);
     const hash = createHash("sha256").update(canonical(request)).digest("hex");
-    return this.database.transaction(async (transaction) => {
+    const saved = await this.database.transaction(async (transaction) => {
       const reservation = await transaction.query(
         `INSERT INTO diagram_mutations (owner_id, mutation_key, request_hash)
         VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING mutation_key`,
@@ -321,5 +322,8 @@ export class DiagramService {
       );
       return saved;
     });
+    // Announce committed changes to open workspaces (replays are harmless).
+    publish({ type: "diagram", id: saved.id, revision: saved.revision });
+    return saved;
   }
 }

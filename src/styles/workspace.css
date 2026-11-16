@@ -1330,3 +1330,25 @@
   gap: 6px;
   width: 100%;
 }
+
+/* A node the agent just added or changed glows briefly. */
+.map-card-changed {
+  animation: agent-change 6s ease-out;
+}
+@keyframes agent-change {
+  0%,
+  40% {
+    border-color: #e0a640;
+    box-shadow: 0 0 0 4px #f5c46b40;
+  }
+  100% {
+    border-color: #d7dfeb;
+    box-shadow: 0 2px 8px #2f455a05;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-card-changed {
+    animation: none;
+    border-color: #e0a640;
+  }
+}

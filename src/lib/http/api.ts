@@ -8,6 +8,7 @@ import { validated } from "@/lib/diagrams/schema";
 import { operationsSchema } from "@/lib/diagrams/patch";
 import { newsletterTemplate } from "@/lib/diagrams/seed";
 import { forbiddenResponse, rejectNonLocal } from "./local";
+import { eventStream, setView, viewSchema } from "./events";
 import { errorResponse, json, readJson } from "./response";
 
 export interface ApiContext {
@@ -44,6 +45,12 @@ export function createApiHandler(context: ApiContext) {
           );
         return key;
       };
+      if (path === "/api/events" && request.method === "GET")
+        return eventStream(request.signal);
+      if (path === "/api/view" && request.method === "POST") {
+        setView(validated(viewSchema, await readJson(request)));
+        return json({ ok: true });
+      }
       if (path === "/api/status" && request.method === "GET")
         return json({
           storage: context.database.mode,

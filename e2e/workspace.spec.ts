@@ -379,3 +379,38 @@ test("keeps a large hierarchical diagram readable and navigable", async ({
     page.getByRole("complementary", { name: "Node details" }),
   ).toContainText("Step to review 24");
 });
+
+test("shows an agent's change live and highlights the changed node", async ({
+  page,
+}) => {
+  const created = await page.request.post("/api/diagrams", {
+    headers: { "idempotency-key": crypto.randomUUID() },
+    data: {
+      title: `Live ${Date.now()}`,
+      document: {
+        schemaVersion: 1,
+        nodes: [{ id: "first", label: "Before the agent" }],
+        edges: [],
+      },
+    },
+  });
+  const saved = await created.json();
+  await page.goto(`/?diagram=${saved.id}`);
+  await expect(page.getByText("Before the agent").first()).toBeVisible();
+  // Give the event stream a moment to connect, then write like an agent.
+  await page.waitForTimeout(500);
+  const patched = await page.request.patch(`/api/diagrams/${saved.id}`, {
+    headers: { "idempotency-key": crypto.randomUUID() },
+    data: {
+      expectedRevision: saved.revision,
+      operations: [
+        { op: "update_node", id: "first", changes: { label: "After the agent" } },
+      ],
+    },
+  });
+  expect(patched.ok()).toBe(true);
+  const card = page.locator(".react-flow__node", { hasText: "After the agent" });
+  await expect(card).toBeVisible({ timeout: 5000 });
+  await expect(card.locator(".map-card-changed")).toHaveCount(1);
+  await expect(page.locator(".document-meta")).toContainText("Revision 2");
+});

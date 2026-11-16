@@ -56,6 +56,7 @@ type MapNode = Node<
     editing: boolean;
     onDrill: (id: string) => void;
     comments: number;
+    changed: boolean;
   },
   "mapNode"
 >;
@@ -78,7 +79,7 @@ const DiagramCard = memo(function DiagramCard({
   data,
   selected,
 }: NodeProps<MapNode>) {
-  const { item, editing, onDrill, comments } = data;
+  const { item, editing, onDrill, comments, changed } = data;
   const Icon =
     item.kind === "decision"
       ? Diamond
@@ -91,7 +92,7 @@ const DiagramCard = memo(function DiagramCard({
             : Workflow;
   return (
     <article
-      className={`map-card tone-${item.colourIndex} ${selected ? "map-card-selected" : ""} ${editing ? "map-card-editing" : ""}`}
+      className={`map-card tone-${item.colourIndex} ${selected ? "map-card-selected" : ""} ${editing ? "map-card-editing" : ""} ${changed ? "map-card-changed" : ""}`}
     >
       {Object.entries(positions).map(([id, position]) => (
         <Handle
@@ -217,6 +218,8 @@ interface CanvasProps {
   onMove: (id: string, position: { x: number; y: number }) => Promise<void>;
   /** Open comments per node (including descendants). */
   commentCounts?: Map<string, number>;
+  /** Nodes changed by the latest agent revision, briefly highlighted. */
+  changedIds?: Set<string>;
 }
 
 function CanvasControls({
@@ -281,6 +284,7 @@ function CanvasScene(props: CanvasProps) {
     onConnect,
     onMove,
     commentCounts,
+    changedIds,
   } = props;
   const graph = useMemo(
     () => projectGraph(document, { scopeId, showFeedback }),
@@ -341,11 +345,12 @@ function CanvasScene(props: CanvasProps) {
             editing,
             onDrill,
             comments: commentCounts?.get(node.id) ?? 0,
+            changed: Boolean(changedIds?.has(node.id)),
           },
           ariaLabel: current.get(node.id)!.label,
         })),
     );
-  }, [layout, graph.nodes, editing, onDrill, setNodes, commentCounts]);
+  }, [layout, graph.nodes, editing, onDrill, setNodes, commentCounts, changedIds]);
 
   useEffect(() => {
     const related =

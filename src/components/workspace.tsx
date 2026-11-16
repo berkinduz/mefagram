@@ -74,6 +74,24 @@ interface Notice {
   error?: boolean;
 }
 
+/** Nodes added or edited between two revisions, plus their ancestors. */
+function changedNodes(previous: DiagramRecord, next: DiagramRecord) {
+  const before = new Map(
+    previous.document.nodes.map((node) => [node.id, JSON.stringify(node)]),
+  );
+  const parents = new Map(next.document.nodes.map((node) => [node.id, node.parentId]));
+  const changed = new Set<string>();
+  for (const node of next.document.nodes) {
+    if (before.get(node.id) === JSON.stringify(node)) continue;
+    let id: string | null | undefined = node.id;
+    while (id && !changed.has(id)) {
+      changed.add(id);
+      id = parents.get(id);
+    }
+  }
+  return changed;
+}
+
 export function Workspace({
   initialDiagrams,
   initialRecord,
@@ -102,6 +120,9 @@ export function Workspace({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [menu, setMenu] = useState(false);
   const [comments, setComments] = useState<DiagramComment[]>([]);
+  const [commentsVersion, setCommentsVersion] = useState(0);
+  // Nodes the agent just changed, highlighted for a few seconds.
+  const [changedIds, setChangedIds] = useState<Set<string>>(new Set());
   const activeId = useRef(initialRecord?.id);
   const navigationVersion = useRef(0);
   const savingNow = useRef(false);
@@ -208,41 +229,78 @@ export function Workspace({
   );
 
   useEffect(() => {
-    if (editing || modal || !recordId) return;
+    if (!recordId) return;
     let running = false;
+    let pending = false;
     const refresh = async () => {
-      if (
-        document.visibilityState !== "visible" ||
-        running ||
-        savingNow.current
-      )
+      // Never replace the record under an open form or edit session.
+      if (editing || modal || savingNow.current) return;
+      if (running) {
+        pending = true;
         return;
+      }
       running = true;
       const id = activeId.current;
       const navigation = navigationVersion.current;
+      const previous = currentRecord.current;
       try {
         const next = await api<DiagramRecord>(`/api/diagrams/${id}`);
         if (
           id === activeId.current &&
-          next.revision > (currentRecord.current?.revision ?? 0)
+          next.revision > (previous?.revision ?? 0)
         ) {
-          if (acceptRecord(next, navigation))
-            setNotice({ text: "Opened the new revision saved by your agent." });
+          if (acceptRecord(next, navigation)) {
+            setNotice({ text: "Updated with the latest changes from your agent." });
+            if (previous?.id === next.id) setChangedIds(changedNodes(previous, next));
+          }
           await refreshCollection();
         }
       } catch {
         /* Keep the confirmed current record; explicit refresh exposes errors. */
       } finally {
         running = false;
+        if (pending) {
+          pending = false;
+          void refresh();
+        }
       }
     };
-    const timer = setInterval(refresh, 15000);
-    window.addEventListener("focus", refresh);
+    // Live updates from the local server; polling covers a dropped stream.
+    let source: EventSource | null = null;
+    try {
+      source = new EventSource("/api/events");
+      source.onmessage = (message) => {
+        try {
+          const event = JSON.parse(message.data);
+          if (event.type === "diagram" && event.id === activeId.current)
+            void refresh();
+          else if (event.type === "diagram") void refreshCollection();
+          if (event.type === "comments" && event.diagramId === activeId.current)
+            setCommentsVersion((value) => value + 1);
+        } catch {
+          /* Ignore malformed events. */
+        }
+      };
+    } catch {
+      source = null;
+    }
+    const poll = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    const timer = setInterval(poll, source ? 60_000 : 15_000);
+    window.addEventListener("focus", poll);
     return () => {
+      source?.close();
       clearInterval(timer);
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener("focus", poll);
     };
   }, [editing, modal, recordId, acceptRecord, refreshCollection]);
+
+  useEffect(() => {
+    if (!changedIds.size) return;
+    const timer = setTimeout(() => setChangedIds(new Set()), 6000);
+    return () => clearTimeout(timer);
+  }, [changedIds]);
 
   useEffect(() => {
     if (!notice || notice.error) return;
@@ -336,7 +394,7 @@ export function Workspace({
     return () => {
       cancelled = true;
     };
-  }, [recordId, revision]);
+  }, [recordId, revision, commentsVersion]);
   const commentActions: CommentActions = useMemo(() => {
     const act = async (task: () => Promise<unknown>) => {
       try {
@@ -391,6 +449,24 @@ export function Workspace({
   const openComments = diagramComments.filter(
     (comment) => comment.status === "open",
   );
+
+  // Tell the local server what is on screen, for get_current_view.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      api("/api/view", {
+        method: "POST",
+        body: {
+          diagramId: recordId ?? null,
+          scopeId: scopeId ?? null,
+          selectedId: selectedId ?? null,
+          mode: view,
+        },
+      }).catch(() => {
+        /* Best effort. */
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [recordId, scopeId, selectedId, view]);
 
   // Agents link straight to a node (`?diagram=…&node=…`); open its phase.
   useEffect(() => {
@@ -897,6 +973,7 @@ export function Workspace({
                       onConnect={connect}
                       onMove={move}
                       commentCounts={commentCounts}
+                      changedIds={changedIds}
                     />
                   ) : (
                     <div className="node-reading-list">

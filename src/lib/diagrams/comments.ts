@@ -4,6 +4,7 @@ import type { Database } from "@/lib/db";
 import { DiagramError } from "./errors";
 import { DiagramRepository } from "./repository";
 import { idSchema, validated } from "./schema";
+import { publish } from "@/lib/http/events";
 
 // Comments are the developer's channel back to the agent (and the agent's way
 // to ask a question). They are not part of the diagram content or revisions.
@@ -36,6 +37,11 @@ export const resolveInputSchema = z
 const iso = (value: unknown) =>
   value ? new Date(value as string).toISOString() : null;
 
+function announce(comment: DiagramComment) {
+  publish({ type: "comments", diagramId: comment.diagramId });
+  return comment;
+}
+
 export class CommentService {
   private readonly repository: DiagramRepository;
   constructor(private readonly database: Database) {
@@ -67,7 +73,7 @@ export class CommentService {
       VALUES ($1, $2, $3, $4, $5, $6)`,
       [id, ownerId, diagram.id, request.nodeId ?? null, author, request.body],
     );
-    return (await this.list(ownerId, { id }))[0];
+    return announce((await this.list(ownerId, { id }))[0]);
   }
 
   async list(
@@ -133,7 +139,7 @@ export class CommentService {
     );
     if (!result.rows.length)
       throw new DiagramError("NOT_FOUND", "Comment not found.", 404);
-    return (await this.list(ownerId, { id }))[0];
+    return announce((await this.list(ownerId, { id }))[0]);
   }
 
   /** The developer answers an agent's question; the agent resolves it later. */
@@ -149,7 +155,7 @@ export class CommentService {
     );
     if (!result.rows.length)
       throw new DiagramError("NOT_FOUND", "Open agent question not found.", 404);
-    return (await this.list(ownerId, { id }))[0];
+    return announce((await this.list(ownerId, { id }))[0]);
   }
 
   async reopen(ownerId: string, id: string) {
@@ -160,6 +166,6 @@ export class CommentService {
     );
     if (!result.rows.length)
       throw new DiagramError("NOT_FOUND", "Comment not found.", 404);
-    return (await this.list(ownerId, { id }))[0];
+    return announce((await this.list(ownerId, { id }))[0]);
   }
 }
