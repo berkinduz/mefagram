@@ -1,15 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { randomBytes } from "node:crypto";
 import { createDatabase } from "@/lib/db";
-import { createAuth } from "@/lib/auth/server";
-import { PersonalTokenService } from "@/lib/auth/tokens";
 import { createApiHandler } from "@/lib/http/api";
 
-describe("authenticated HTTP diagram workflow", () => {
+describe("local HTTP diagram workflow", () => {
   let db: Awaited<ReturnType<typeof createDatabase>>;
   let handler: ReturnType<typeof createApiHandler>;
-  let token: string;
-  const baseURL = "http://localhost:3200";
+  const baseURL = "http://127.0.0.1:3200";
   const fixture = {
     title: "Persistent API map",
     description: "",
@@ -25,13 +21,14 @@ describe("authenticated HTTP diagram workflow", () => {
     method = "GET",
     body?: unknown,
     key?: string,
-    bearer = token,
+    extraHeaders: Record<string, string> = {},
   ) =>
     handler(
       new Request(`${baseURL}${path}`, {
         method,
         headers: {
-          ...(bearer ? { authorization: `Bearer ${bearer}` } : {}),
+          host: "127.0.0.1:3200",
+          ...extraHeaders,
           ...(body ? { "content-type": "application/json" } : {}),
           ...(key ? { "idempotency-key": key } : {}),
         },
@@ -40,55 +37,55 @@ describe("authenticated HTTP diagram workflow", () => {
     );
   beforeAll(async () => {
     db = await createDatabase({ dataDir: "memory://" });
-    const setupKey = randomBytes(32).toString("hex");
-    const auth = createAuth(db, {
-      baseURL,
-      setupKey,
-      ownerEmail: "api@mefagram.local",
-      secret: randomBytes(40).toString("hex"),
-    });
-    const owner = await auth.api.signUpEmail({
-      body: {
-        email: "api@mefagram.local",
-        name: "API Owner",
-        password: randomBytes(24).toString("base64url"),
-      },
-      headers: new Headers({ "x-mefagram-setup-key": setupKey }),
-    });
-    token = (
-      await new PersonalTokenService(db).create(owner.user.id, {
-        name: "API test",
-        scopes: ["diagrams:read", "diagrams:write"],
-        expiresInDays: 1,
-      })
-    ).token;
-    handler = createApiHandler({ database: db, auth, baseURL });
+    handler = createApiHandler({ database: db });
   });
   afterAll(async () => {
     await db?.close();
   });
 
-  test("rejects unauthenticated reads and writes without disclosing content", async () => {
+  test("refuses DNS-rebinding hosts and other websites without disclosing content", async () => {
+    for (const host of ["evil.example:3200", "127.0.0.1.evil.example", ""]) {
+      const response = await request("/api/diagrams", "GET", undefined, undefined, { host });
+      expect(response.status).toBe(403);
+      expect(await response.text()).not.toContain("Persistent API map");
+    }
     expect(
-      (await request("/api/diagrams", "GET", undefined, undefined, "")).status,
-    ).toBe(401);
+      (
+        await request("/api/diagrams", "POST", fixture, "cross-site", {
+          origin: "https://evil.example",
+        })
+      ).status,
+    ).toBe(403);
     expect(
-      (await request("/api/diagrams", "POST", fixture, "unauth", "")).status,
-    ).toBe(401);
+      (await request("/api/diagrams", "GET", undefined, undefined, { origin: "null" }))
+        .status,
+    ).toBe(403);
+    for (const host of ["localhost:3200", "[::1]:3200"])
+      expect(
+        (await request("/api/diagrams", "GET", undefined, undefined, { host }))
+          .status,
+      ).toBe(200);
+    expect(
+      (
+        await request("/api/diagrams", "GET", undefined, undefined, {
+          origin: "http://localhost:3200",
+        })
+      ).status,
+    ).toBe(200);
   });
 
-  test("creates the same fictional newsletter example through the authenticated template API", async () => {
+  test("creates the same fictional newsletter example through the template API", async () => {
     expect(
       (
         await request(
           "/api/templates/newsletter",
           "POST",
           undefined,
-          "unauth-template",
-          "",
+          "cross-site-template",
+          { origin: "https://evil.example" },
         )
       ).status,
-    ).toBe(401);
+    ).toBe(403);
     const response = await request(
       "/api/templates/newsletter",
       "POST",
@@ -254,7 +251,7 @@ describe("authenticated HTTP diagram workflow", () => {
       new Request(`${baseURL}/api/diagrams`, {
         method: "POST",
         headers: {
-          authorization: `Bearer ${token}`,
+          host: "127.0.0.1:3200",
           "content-type": "application/json",
           "idempotency-key": "bad-json",
         },
@@ -264,17 +261,10 @@ describe("authenticated HTTP diagram workflow", () => {
     expect(response.status).toBe(400);
   });
 
-  test("prevents an agent token from issuing more credentials", async () => {
-    expect((await request("/api/tokens", "GET")).status).toBe(403);
+  test("no longer exposes credential management routes", async () => {
+    expect((await request("/api/tokens", "GET")).status).toBe(404);
     expect(
-      (
-        await request(
-          "/api/tokens",
-          "POST",
-          { name: "Escalate", scopes: ["diagrams:write"] },
-          "escalation",
-        )
-      ).status,
-    ).toBe(403);
+      (await request("/api/tokens", "POST", { name: "x" }, "tokens")).status,
+    ).toBe(404);
   });
 });

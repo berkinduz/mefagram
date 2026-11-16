@@ -2,7 +2,7 @@
 
 Turn conversations into workflows, project plans and research maps that stay useful after the chat ends.
 
-Mefagram is a **self-hosted diagram workspace and MCP server for AI agents**. Your agents build and update the map; you explore it in the browser.
+Mefagram is a **local diagram workspace and MCP server for AI agents**. Your agents build and update the map; you explore it in the browser.
 
 - **Explore:** zoom, pan, expand stages, and inspect notes and sources.
 - **Keep context:** search saved diagrams and revisit their revision history.
@@ -21,13 +21,19 @@ npm run build
 npm start
 ```
 
-Open [localhost:3000](http://127.0.0.1:3000). Login credentials are in `.mefagram/local-access.json`. Omit `--example newsletter` for an empty workspace.
+Open [127.0.0.1:3000](http://127.0.0.1:3000). There is no login: Mefagram only accepts requests addressed to this computer. Omit `--example newsletter` for an empty workspace.
 
-## Connect your agent
+## Connect Claude
 
-MCP endpoint: `http://127.0.0.1:3000/api/mcp`. Authenticate with OAuth or a scoped token. No model API key is required.
+MCP endpoint: `http://127.0.0.1:3000/api/mcp` (Streamable HTTP, no credentials).
 
-Agents with terminal access can use the included MCP client:
+Inside this repository, Claude Code picks up the bundled `.mcp.json` and asks once to enable the `mefagram` server. To use it from every project:
+
+```sh
+claude mcp add --transport http --scope user mefagram http://127.0.0.1:3000/api/mcp
+```
+
+Agents with terminal access can also use the included MCP client:
 
 ```sh
 npm run agent -- list
@@ -36,6 +42,6 @@ npm run agent -- tools
 
 Try asking: **“Map our onboarding process, including handoffs, decisions and source links.”**
 
-Local data persists on disk. Remote agents need a reachable HTTPS installation. See the [agent guide](docs/agent-integration.md) for tools, authentication and update examples.
+The app must be running for agents to connect. Data persists on disk in `.mefagram/`. See the [agent guide](docs/agent-integration.md) for tools and update examples.
 
-[Install & backup](docs/installation.md) · [Hosting](docs/deployment.md) · [Contribute](CONTRIBUTING.md)
+[Install & backup](docs/installation.md) · [Contribute](CONTRIBUTING.md)

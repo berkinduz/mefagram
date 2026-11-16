@@ -78,12 +78,6 @@ try {
     const reopened = await call("get_diagram", { id: marker.id });
     assert.equal(reopened.revision, marker.revision);
     assert.equal(reopened.document.nodes[0].notes, marker.note);
-    const access = JSON.parse(
-      await readFile(
-        process.env.MEFAGRAM_ACCESS_FILE ?? ".mefagram/local-access.json",
-        "utf8",
-      ),
-    );
     const browser = await chromium.launch();
     try {
       const page = await browser.newPage({
@@ -91,13 +85,6 @@ try {
       });
       const errors: string[] = [];
       page.on("pageerror", (error) => errors.push(error.message));
-      await page.goto(`${baseURL}/sign-in`);
-      await page.getByLabel("Email").fill(access.email);
-      await page.getByLabel("Password", { exact: true }).fill(access.password);
-      await page.getByRole("button", { name: "Open workspace" }).click();
-      await page
-        .getByRole("navigation", { name: "Diagram collection" })
-        .waitFor();
       await page.goto(`${baseURL}/?diagram=${marker.id}`);
       await page
         .getByText("Persistent agent record", { exact: true })

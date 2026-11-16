@@ -1,53 +1,28 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
-import { randomBytes } from "node:crypto";
 import {
   Client,
   StreamableHTTPClientTransport,
 } from "@modelcontextprotocol/client";
 import { createDatabase } from "@/lib/db";
-import { createAuth } from "@/lib/auth/server";
-import { PersonalTokenService } from "@/lib/auth/tokens";
+import { LOCAL_OWNER } from "@/lib/db/migrate";
 import { createMcpEndpoint } from "@/lib/mcp/server";
 import { DiagramService } from "@/lib/diagrams/service";
 
 describe("real MCP client to persistent diagram tools", () => {
   let db: Awaited<ReturnType<typeof createDatabase>>;
-  let auth: ReturnType<typeof createAuth>;
-  let ownerId: string;
-  const baseURL = "http://localhost:3300";
+  const ownerId = LOCAL_OWNER;
+  const baseURL = "http://127.0.0.1:3300";
   const clients: Client[] = [];
   beforeAll(async () => {
     db = await createDatabase({ dataDir: "memory://" });
-    const setupKey = randomBytes(32).toString("hex");
-    auth = createAuth(db, {
-      baseURL,
-      setupKey,
-      ownerEmail: "mcp@mefagram.local",
-      secret: randomBytes(40).toString("hex"),
-    });
-    ownerId = (
-      await auth.api.signUpEmail({
-        body: {
-          email: "mcp@mefagram.local",
-          password: randomBytes(24).toString("base64url"),
-          name: "MCP Owner",
-        },
-        headers: new Headers({ "x-mefagram-setup-key": setupKey }),
-      })
-    ).user.id;
   });
   afterAll(async () => {
     for (const client of clients) await client.close();
     await db?.close();
   });
 
-  async function connect(scopes: ("diagrams:read" | "diagrams:write")[]) {
-    const issued = await new PersonalTokenService(db).create(ownerId, {
-      name: "MCP test",
-      scopes,
-      expiresInDays: 1,
-    });
-    const endpoint = createMcpEndpoint({ database: db, auth, baseURL });
+  async function connect(headers: Record<string, string> = {}) {
+    const endpoint = createMcpEndpoint({ database: db });
     const client = new Client({
       name: "mefagram-test-agent",
       version: "1.0.0",
@@ -55,15 +30,20 @@ describe("real MCP client to persistent diagram tools", () => {
     clients.push(client);
     await client.connect(
       new StreamableHTTPClientTransport(new URL(`${baseURL}/api/mcp`), {
-        requestInit: { headers: { authorization: `Bearer ${issued.token}` } },
-        fetch: (input, init) => endpoint(new Request(input, init)),
+        fetch: (input, init) => {
+          const request = new Request(input, init);
+          request.headers.set("host", "127.0.0.1:3300");
+          for (const [key, value] of Object.entries(headers))
+            request.headers.set(key, value);
+          return endpoint(request);
+        },
       }),
     );
     return client;
   }
 
   test("discovers tools and creates, updates and rereads the same database record", async () => {
-    const client = await connect(["diagrams:read", "diagrams:write"]);
+    const client = await connect();
     const tools = await client.listTools();
     expect(tools.tools.map((tool) => tool.name)).toContain("update_diagram");
     const created = await client.callTool({
@@ -120,27 +100,38 @@ describe("real MCP client to persistent diagram tools", () => {
     });
   });
 
-  test("does not allow writes with a read-only token", async () => {
-    const client = await connect(["diagrams:read"]);
-    const result = await client.callTool({
-      name: "create_diagram",
-      arguments: {
-        title: "Forbidden",
-        description: "",
-        tags: [],
-        document: { schemaVersion: 1, nodes: [], edges: [] },
-        mutationId: "mcp-read-only",
-      },
-    });
-    expect(result.isError).toBe(true);
-    expect(result.structuredContent).toMatchObject({
-      code: "INSUFFICIENT_SCOPE",
-    });
+  test("refuses MCP requests from other websites and rebinding hosts", async () => {
+    const endpoint = createMcpEndpoint({ database: db });
+    const call = (headers: Record<string, string>) =>
+      endpoint(
+        new Request(`${baseURL}/api/mcp`, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+            ...headers,
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "tools/call",
+            params: { name: "list_diagrams", arguments: {} },
+          }),
+        }),
+      );
+    expect((await call({ host: "evil.example" })).status).toBe(403);
+    expect(
+      (await call({ host: "127.0.0.1:3300", origin: "https://evil.example" }))
+        .status,
+    ).toBe(403);
+    await expect(
+      connect({ origin: "https://evil.example" }),
+    ).rejects.toThrow();
   });
 
   test("shares one canonical diagram across independent agents and rejects a concurrent stale write", async () => {
-    const first = await connect(["diagrams:read", "diagrams:write"]);
-    const second = await connect(["diagrams:read", "diagrams:write"]);
+    const first = await connect();
+    const second = await connect();
     const created = await first.callTool({
       name: "create_diagram",
       arguments: {

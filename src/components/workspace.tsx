@@ -67,11 +67,9 @@ interface Notice {
 export function Workspace({
   initialDiagrams,
   initialRecord,
-  userName,
 }: {
   initialDiagrams: DiagramSummary[];
   initialRecord: DiagramRecord | null;
-  userName: string;
 }) {
   const [diagrams, setDiagrams] = useState(initialDiagrams);
   const [record, setRecord] = useState(initialRecord);
@@ -424,7 +422,6 @@ export function Workspace({
         onNew={() => setModal({ type: "new" })}
         onImport={() => setModal({ type: "import" })}
         onConnect={() => setModal({ type: "connections" })}
-        userName={userName}
       />
       <main className="main-workspace">
         {record ? (

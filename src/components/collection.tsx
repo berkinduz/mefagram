@@ -1,10 +1,8 @@
 "use client";
 import {
   Archive,
-  ChevronDown,
   FolderOpen,
   Import,
-  LogOut,
   Network,
   Plus,
   PlugZap,
@@ -13,8 +11,6 @@ import {
 } from "lucide-react";
 import type { DiagramSummary } from "@/lib/diagrams/schema";
 import { Brand } from "./brand";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 export function Collection({
   diagrams,
@@ -28,7 +24,6 @@ export function Collection({
   onNew,
   onImport,
   onConnect,
-  userName,
 }: {
   diagrams: DiagramSummary[];
   activeId?: string;
@@ -41,25 +36,20 @@ export function Collection({
   onNew: () => void;
   onImport: () => void;
   onConnect: () => void;
-  userName: string;
 }) {
-  const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
   return (
     <aside className="collection" aria-label="Workspace">
       <div className="collection-brand">
         <Brand />
       </div>
       <div className="workspace-owner">
-        <span className="owner-avatar">
-          {userName.slice(0, 1).toLocaleUpperCase("en")}
+        <span className="owner-avatar" aria-hidden="true">
+          M
         </span>
         <div>
           <strong>My workspace</strong>
-          <span>{userName}</span>
+          <span>On this computer</span>
         </div>
-        <ChevronDown size={14} />
       </div>
       <div className="collection-search">
         <Search size={15} />
@@ -143,11 +133,6 @@ export function Collection({
         )}
       </nav>
       <div className="collection-footer">
-        {signOutError && (
-          <p className="form-error" role="alert">
-            {signOutError}
-          </p>
-        )}
         <button onClick={onImport}>
           <Import size={16} />
           Import diagram
@@ -155,31 +140,6 @@ export function Collection({
         <button onClick={onConnect}>
           <PlugZap size={16} />
           Agent connections
-        </button>
-        <button
-          disabled={signingOut}
-          onClick={async () => {
-            setSigningOut(true);
-            setSignOutError("");
-            try {
-              const response = await fetch("/api/auth/sign-out", {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: "{}",
-              });
-              if (!response.ok) throw new Error("Sign-out was rejected.");
-              router.replace("/sign-in");
-              router.refresh();
-            } catch {
-              setSignOutError(
-                "Could not sign out. You are still signed in; please try again.",
-              );
-              setSigningOut(false);
-            }
-          }}
-        >
-          <LogOut size={16} />
-          Sign out
         </button>
       </div>
     </aside>

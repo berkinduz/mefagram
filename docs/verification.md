@@ -2,6 +2,12 @@
 
 Evidence is recorded separately for the application, its portable installer and a particular hosted deployment. Fixtures are synthetic. Private databases, credentials and raw local reports are excluded from Git and deployment bundles.
 
+## Local mode — v0.2.0
+
+Sign-in, OAuth, consent and personal tokens were removed. Access control is now the loopback boundary: every page, asset, API and MCP request is refused unless its `Host` is loopback, and requests carrying another website's `Origin` are refused.
+
+Local verification on 2026-11-16 passed typecheck, lint, 56 unit tests (the three native PostgreSQL cases need `TEST_DATABASE_URL` and were skipped locally), the production build with bundle privacy check, and 11 production Chromium flows. New tests cover rebinding hosts, cross-site origins for the API and MCP, and a real CLI upgrade of an account-era database: diagrams, history and mutation receipts move to the local owner, a pre-upgrade retry returns its original result, obsolete secrets and `local-access.json` are removed. An existing workspace was upgraded with its stopped database backed up first; Claude Code connected to the token-free endpoint through `.mcp.json`. `npm run verify:installation` was adapted but not rerun.
+
 ## English interface — v0.1.2
 
 The interface, accessibility labels, sign-in/consent, API/MCP errors, date formatting, examples and public documentation use English. Known system summaries from older releases are presented in English by the shared service without rewriting stored rows. User-provided content remains unchanged.
