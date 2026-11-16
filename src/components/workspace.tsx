@@ -66,9 +66,11 @@ interface Notice {
 export function Workspace({
   initialDiagrams,
   initialRecord,
+  initialNodeId,
 }: {
   initialDiagrams: DiagramSummary[];
   initialRecord: DiagramRecord | null;
+  initialNodeId?: string;
 }) {
   const [diagrams, setDiagrams] = useState(initialDiagrams);
   const [record, setRecord] = useState(initialRecord);
@@ -297,6 +299,10 @@ export function Workspace({
     setNodeQuery("");
     setFocus(false);
   }, []);
+  // Agents link straight to a node (`?diagram=…&node=…`); open its phase.
+  useEffect(() => {
+    if (initialNodeId) goToNode(initialNodeId);
+  }, [initialNodeId, goToNode]);
   const drill = useCallback((id: string) => {
     setScopeId(id);
     setSelectedId(null);

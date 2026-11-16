@@ -148,6 +148,9 @@ describe("real MCP client to persistent diagram tools", () => {
       id: string;
       revision: number;
     };
+    expect(created.structuredContent).toMatchObject({
+      viewUrl: `${baseURL}/?diagram=${id}`,
+    });
     expect(
       (await second.callTool({ name: "get_diagram", arguments: { id } }))
         .structuredContent,

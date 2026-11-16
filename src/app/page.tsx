@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ diagram?: string }>;
+  searchParams: Promise<{ diagram?: string; node?: string }>;
 }) {
   const service = new DiagramService(await getDatabase());
   const diagrams = await service.list(LOCAL_OWNER);
@@ -22,5 +22,11 @@ export default async function Page({
       if (!(error instanceof DiagramError)) throw error;
     }
   }
-  return <Workspace initialDiagrams={diagrams} initialRecord={record} />;
+  return (
+    <Workspace
+      initialDiagrams={diagrams}
+      initialRecord={record}
+      initialNodeId={params.node}
+    />
+  );
 }
