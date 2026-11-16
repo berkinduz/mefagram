@@ -2,7 +2,16 @@
 // Mefagram command line: run the local workspace, bridge MCP over stdio for
 // agents, and move diagrams between the workspace and a repository.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
@@ -76,7 +85,7 @@ function nextBin() {
 }
 
 async function ensureBuilt() {
-  if (existsSync(join(root, ".next", "BUILD_ID"))) return;
+  if (existsSync(join(root, ".next", "BUILD_ID"))) return linkExternals();
   log("Building Mefagram for the first run…");
   await new Promise((done, fail) => {
     const child = spawn(process.execPath, [nextBin(), "build"], {
@@ -88,6 +97,37 @@ async function ensureBuilt() {
       code === 0 ? done() : fail(new Error("Build failed.")),
     );
   });
+  linkExternals();
+}
+
+/** Directory of an installed package, searching node_modules up from root. */
+function packageDir(name) {
+  for (let dir = root; ; dir = dirname(dir)) {
+    const candidate = join(dir, "node_modules", name);
+    if (existsSync(join(candidate, "package.json"))) return candidate;
+    if (dirname(dir) === dir) return null;
+  }
+}
+
+/** Recreate Turbopack's external package links for this installation. */
+function linkExternals() {
+  const manifest = join(root, ".next", "external-modules.json");
+  if (!existsSync(manifest)) return;
+  const links = JSON.parse(readFileSync(manifest, "utf8"));
+  for (const [link, name] of Object.entries(links)) {
+    const path = join(root, ".next", "node_modules", link);
+    if (existsSync(join(path, "package.json"))) continue;
+    const target = packageDir(name);
+    if (!target) throw new Error(`Missing dependency ${name}. Reinstall Mefagram.`);
+    try {
+      lstatSync(path);
+      rmSync(path, { force: true, recursive: true });
+    } catch {
+      /* Not there yet. */
+    }
+    mkdirSync(dirname(path), { recursive: true });
+    symlinkSync(target, path, process.platform === "win32" ? "junction" : "dir");
+  }
 }
 
 function serverArgs() {

@@ -3,7 +3,6 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
-    "postinstall": "node scripts/copy-layout-worker.mjs",
     "dev": "next dev --hostname 127.0.0.1 --port 4747",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 4747",
@@ -16,10 +15,11 @@
     "verify:integration": "tsx scripts/verify-integration.ts",
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "schema:export": "tsx scripts/export-schema.ts",
-    "postbuild": "node scripts/verify-bundle.mjs",
+    "postbuild": "node scripts/record-externals.mjs && node scripts/verify-bundle.mjs",
     "verify:installation": "tsx scripts/verify-installation.ts",
     "mefagram": "node bin/mefagram.mjs",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm run lint && npm test && npm run build",
+    "prepare": "node scripts/copy-layout-worker.mjs"
   },
   "engines": {
     "node": ">=24"
@@ -79,7 +79,6 @@
     "!.next/dev",
     "!.next/trace",
     "next.config.ts",
-    "scripts/copy-layout-worker.mjs",
     "README.md",
     "LICENSE",
     "NOTICE.md"

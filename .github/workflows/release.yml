@@ -1,0 +1,39 @@
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+  id-token: write # npm provenance and trusted publishing
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Tag matches package version
+        run: |
+          version="$(node -p 'require("./package.json").version')"
+          test "v${version}" = "${GITHUB_REF_NAME}" || {
+            echo "Tag ${GITHUB_REF_NAME} does not match package.json version ${version}." >&2
+            exit 1
+          }
+      - run: npm ci
+      # prepublishOnly runs typecheck, lint, unit tests and the build (with the
+      # bundle privacy check) before anything is uploaded.
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          # Needed for the first release; afterwards trusted publishing (OIDC)
+          # works without a token once it is configured on npmjs.com.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -30,3 +30,7 @@ Preserve stable node and edge IDs and the versioned export format. Schema change
 ## Community and licensing
 
 Be considerate, explain tradeoffs and assume good intent. Contributions are provided under the project's [MIT license](LICENSE). Dependencies retain their own licenses. For sensitive security reports, follow [SECURITY.md](SECURITY.md).
+
+## Releases
+
+Maintainers publish to npm from CI; see [docs/releasing.md](docs/releasing.md).

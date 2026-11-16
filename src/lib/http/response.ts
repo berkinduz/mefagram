@@ -21,9 +21,11 @@ export function errorResponse(
       error.status,
       headers,
     );
+  // Local-only server: the message helps diagnose setup problems and never
+  // reaches the client.
   console.error(
     "Mefagram request failed:",
-    error instanceof Error ? error.name : "Unknown error",
+    error instanceof Error ? `${error.name}: ${error.message}` : "Unknown error",
   );
   return json(
     {
