@@ -53,4 +53,23 @@ ALTER TABLE diagrams ADD COLUMN IF NOT EXISTS project_root TEXT NOT NULL DEFAULT
 CREATE INDEX IF NOT EXISTS diagrams_owner_project ON diagrams(owner_id, project, updated_at DESC);
 `,
   },
+  {
+    // Developer feedback for agents and agent questions for developers.
+    id: "comments-v1",
+    sql: `
+CREATE TABLE IF NOT EXISTS diagram_comments (
+  id TEXT PRIMARY KEY,
+  owner_id TEXT NOT NULL,
+  diagram_id TEXT NOT NULL REFERENCES diagrams(id) ON DELETE CASCADE,
+  node_id TEXT,
+  author TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  reply TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS diagram_comments_open ON diagram_comments(owner_id, status, created_at);
+`,
+  },
 ];

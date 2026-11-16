@@ -34,6 +34,8 @@ import type {
   DiagramSummary,
 } from "@/lib/diagrams/schema";
 import type { DiagramOperation } from "@/lib/diagrams/patch";
+import type { DiagramComment } from "@/lib/diagrams/comments";
+import { CommentsDialog, type CommentActions } from "./comments";
 import { api, ApiError } from "@/lib/http/client";
 import {
   breadcrumbsFor,
@@ -55,7 +57,15 @@ const DiagramCanvas = dynamic(() => import("./diagram-canvas"), {
   ),
 });
 type Modal =
-  | { type: "new" | "metadata" | "import" | "connections" | "history" }
+  | {
+      type:
+        | "new"
+        | "metadata"
+        | "import"
+        | "connections"
+        | "history"
+        | "comments";
+    }
   | { type: "node"; node?: DiagramNode; parentId: string | null }
   | { type: "edge"; edge?: DiagramEdge; source?: string; target?: string }
   | null;
@@ -91,6 +101,7 @@ export function Workspace({
   const [modal, setModal] = useState<Modal>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [menu, setMenu] = useState(false);
+  const [comments, setComments] = useState<DiagramComment[]>([]);
   const activeId = useRef(initialRecord?.id);
   const navigationVersion = useRef(0);
   const savingNow = useRef(false);
@@ -300,6 +311,87 @@ export function Workspace({
     setNodeQuery("");
     setFocus(false);
   }, []);
+  const loadComments = useCallback(async () => {
+    if (!recordId) return;
+    try {
+      const rows = await api<DiagramComment[]>(
+        `/api/diagrams/${recordId}/comments`,
+      );
+      if (activeId.current === recordId) setComments(rows);
+    } catch {
+      /* Comments are secondary; the map stays usable. */
+    }
+  }, [recordId]);
+  const revision = record?.revision;
+  useEffect(() => {
+    if (!recordId) return;
+    let cancelled = false;
+    api<DiagramComment[]>(`/api/diagrams/${recordId}/comments`)
+      .then((rows) => {
+        if (!cancelled) setComments(rows);
+      })
+      .catch(() => {
+        /* Comments are secondary; the map stays usable. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId, revision]);
+  const commentActions: CommentActions = useMemo(() => {
+    const act = async (task: () => Promise<unknown>) => {
+      try {
+        await task();
+        await loadComments();
+      } catch (failure) {
+        showError(failure);
+        throw failure;
+      }
+    };
+    return {
+      onAdd: (body, nodeId) =>
+        act(() =>
+          api(`/api/diagrams/${recordId}/comments`, {
+            method: "POST",
+            body: { body, nodeId },
+          }),
+        ),
+      onResolve: (id) =>
+        act(() => api(`/api/comments/${id}/resolve`, { method: "POST", body: {} })),
+      onReopen: (id) =>
+        act(() => api(`/api/comments/${id}/reopen`, { method: "POST", body: {} })),
+      onAnswer: (id, reply) =>
+        act(() =>
+          api(`/api/comments/${id}/answer`, { method: "POST", body: { reply } }),
+        ),
+    };
+  }, [recordId, loadComments, showError]);
+  // Comments of the diagram on screen (a previous diagram's list may linger).
+  const diagramComments = useMemo(
+    () => comments.filter((comment) => comment.diagramId === recordId),
+    [comments, recordId],
+  );
+  // Open comments per node, counted on every ancestor phase as well.
+  const commentCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const parents = new Map(
+      (record?.document.nodes ?? []).map((node) => [node.id, node.parentId]),
+    );
+    for (const comment of diagramComments) {
+      if (comment.status !== "open" || !comment.nodeId) continue;
+      let id: string | null | undefined = comment.nodeId;
+      const seen = new Set<string>();
+      while (id && !seen.has(id)) {
+        seen.add(id);
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+        id = parents.get(id);
+      }
+    }
+    return counts;
+  }, [diagramComments, record]);
+  const openComments = diagramComments.filter(
+    (comment) => comment.status === "open",
+  );
+
   // Agents link straight to a node (`?diagram=…&node=…`); open its phase.
   useEffect(() => {
     if (initialNodeId) goToNode(initialNodeId);
@@ -577,6 +669,14 @@ export function Workspace({
                   {record.document.nodes.length === 1 ? "node" : "nodes"}
                 </span>
                 <span>Revision {record.revision}</span>
+                <button
+                  className="meta-link"
+                  onClick={() => setModal({ type: "comments" })}
+                >
+                  {openComments.length
+                    ? `${openComments.length} open ${openComments.length === 1 ? "comment" : "comments"}`
+                    : "Comments"}
+                </button>
                 {record.tags.includes("Starter draft") && (
                   <span className="draft-label">Starter draft</span>
                 )}
@@ -796,6 +896,7 @@ export function Workspace({
                       onEdge={selectEdge}
                       onConnect={connect}
                       onMove={move}
+                      commentCounts={commentCounts}
                     />
                   ) : (
                     <div className="node-reading-list">
@@ -859,6 +960,8 @@ export function Workspace({
                   onDrill={drill}
                   onFocus={() => setFocus(!focus)}
                   onEditEdge={(edge) => setModal({ type: "edge", edge })}
+                  comments={diagramComments}
+                  commentActions={commentActions}
                 />
               )}
               {!selected && edgeIds.length > 0 && (
@@ -964,6 +1067,14 @@ export function Workspace({
           onImport={async (value, mutationId) =>
             createRecord("/api/diagrams/import", value, mutationId)
           }
+        />
+      )}
+      {modal?.type === "comments" && record && (
+        <CommentsDialog
+          comments={diagramComments}
+          actions={commentActions}
+          onOpenNode={goToNode}
+          onClose={closeModal}
         />
       )}
       {modal?.type === "connections" && (

@@ -13,6 +13,8 @@ import {
   Pencil,
   X,
 } from "lucide-react";
+import type { DiagramComment } from "@/lib/diagrams/comments";
+import { NodeComments, type CommentActions } from "./comments";
 import type {
   DiagramNode,
   DiagramRecord,
@@ -136,6 +138,8 @@ export function NodeInspector({
   onDrill,
   onFocus,
   onEditEdge,
+  comments,
+  commentActions,
 }: {
   record: DiagramRecord;
   node: DiagramNode;
@@ -147,6 +151,8 @@ export function NodeInspector({
   onDrill: (id: string) => void;
   onFocus: () => void;
   onEditEdge: (edge: DiagramEdge) => void;
+  comments: DiagramComment[];
+  commentActions: CommentActions;
 }) {
   const children = record.document.nodes.filter(
     (item) => item.parentId === node.id,
@@ -300,6 +306,11 @@ export function NodeInspector({
             </div>
           </section>
         )}
+        <NodeComments
+          nodeId={node.id}
+          comments={comments}
+          actions={commentActions}
+        />
         {node.tags.length > 0 && (
           <div className="tag-list inspector-tags">
             {node.tags.map((tag) => (

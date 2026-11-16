@@ -3,6 +3,7 @@ import type { Database } from "@/lib/db";
 import { LOCAL_OWNER } from "@/lib/db/migrate";
 import { DiagramError } from "@/lib/diagrams/errors";
 import { DiagramService } from "@/lib/diagrams/service";
+import { CommentService } from "@/lib/diagrams/comments";
 import { validated } from "@/lib/diagrams/schema";
 import { operationsSchema } from "@/lib/diagrams/patch";
 import { newsletterTemplate } from "@/lib/diagrams/seed";
@@ -90,8 +91,24 @@ export function createApiHandler(context: ApiContext) {
           ),
           201,
         );
+      const comment = /^\/api\/comments\/([^/]+)\/(resolve|reopen|answer)$/.exec(
+        path,
+      );
+      if (comment && request.method === "POST") {
+        const comments = new CommentService(context.database);
+        const [, commentId, verb] = comment;
+        return json(
+          verb === "resolve"
+            ? await comments.resolve(identity.userId, commentId, await readJson(request))
+            : verb === "answer"
+              ? await comments.answer(identity.userId, commentId, await readJson(request))
+              : await comments.reopen(identity.userId, commentId),
+        );
+      }
       const match =
-        /^\/api\/diagrams\/([^/]+)(?:\/(history|export|restore))?$/.exec(path);
+        /^\/api\/diagrams\/([^/]+)(?:\/(history|export|restore|comments))?$/.exec(
+          path,
+        );
       if (match) {
         const [, id, action] = match;
         if (!action && request.method === "GET")
@@ -107,6 +124,26 @@ export function createApiHandler(context: ApiContext) {
               mutationId(),
             ),
           );
+        }
+        if (action === "comments") {
+          const comments = new CommentService(context.database);
+          if (request.method === "GET")
+            return json(
+              await comments.list(identity.userId, {
+                diagramId: id,
+                status: "all",
+              }),
+            );
+          if (request.method === "POST")
+            return json(
+              await comments.add(
+                identity.userId,
+                id,
+                "developer",
+                await readJson(request),
+              ),
+              201,
+            );
         }
         if (action === "history" && request.method === "GET")
           return json(await service.revisions(identity.userId, id));

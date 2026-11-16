@@ -180,7 +180,7 @@ test("reimports the actual downloaded near-limit JSON file without losing conten
   const nodes = Array.from({ length: 40 }, (_, index) => ({
     id: `n${index}`,
     label: "Synthetic",
-    notes: "x".repeat(49898),
+    notes: "x".repeat(49887),
   }));
   const a = await create(page, "Cafe\u0301 workflow", nodes);
   await page.goto(`/?diagram=${a.id}`);

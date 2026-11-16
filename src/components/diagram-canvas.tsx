@@ -31,6 +31,7 @@ import {
   Focus,
   Layers3,
   Maximize,
+  MessageSquare,
   Minus,
   Plus,
   StickyNote,
@@ -50,7 +51,12 @@ import {
 } from "@/lib/graph/layout";
 
 type MapNode = Node<
-  { item: ProjectedNode; editing: boolean; onDrill: (id: string) => void },
+  {
+    item: ProjectedNode;
+    editing: boolean;
+    onDrill: (id: string) => void;
+    comments: number;
+  },
   "mapNode"
 >;
 type MapEdge = Edge<{ route: LayoutEdge }, "routed">;
@@ -72,7 +78,7 @@ const DiagramCard = memo(function DiagramCard({
   data,
   selected,
 }: NodeProps<MapNode>) {
-  const { item, editing, onDrill } = data;
+  const { item, editing, onDrill, comments } = data;
   const Icon =
     item.kind === "decision"
       ? Diamond
@@ -119,6 +125,15 @@ const DiagramCard = memo(function DiagramCard({
             {item.childCount} {item.childCount === 1 ? "step" : "steps"}
             <ChevronRight size={14} />
           </button>
+        )}
+        {comments > 0 && (
+          <span
+            className="node-comments"
+            title={`${comments} open ${comments === 1 ? "comment" : "comments"}`}
+          >
+            <MessageSquare size={12} />
+            {comments}
+          </span>
         )}
         {item.sources.length > 0 && (
           <span
@@ -200,6 +215,8 @@ interface CanvasProps {
   onEdge: (ids: string[]) => void;
   onConnect: (connection: Connection) => void;
   onMove: (id: string, position: { x: number; y: number }) => Promise<void>;
+  /** Open comments per node (including descendants). */
+  commentCounts?: Map<string, number>;
 }
 
 function CanvasControls({
@@ -263,6 +280,7 @@ function CanvasScene(props: CanvasProps) {
     onEdge,
     onConnect,
     onMove,
+    commentCounts,
   } = props;
   const graph = useMemo(
     () => projectGraph(document, { scopeId, showFeedback }),
@@ -318,11 +336,16 @@ function CanvasScene(props: CanvasProps) {
           style: { width: node.width, height: node.height },
           width: node.width,
           height: node.height,
-          data: { item: current.get(node.id)!, editing, onDrill },
+          data: {
+            item: current.get(node.id)!,
+            editing,
+            onDrill,
+            comments: commentCounts?.get(node.id) ?? 0,
+          },
           ariaLabel: current.get(node.id)!.label,
         })),
     );
-  }, [layout, graph.nodes, editing, onDrill, setNodes]);
+  }, [layout, graph.nodes, editing, onDrill, setNodes, commentCounts]);
 
   useEffect(() => {
     const related =
