@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { acquireDataLock } from "./lock";
 import {
   diagramMigration,
   laterMigrations,
@@ -51,18 +52,31 @@ export async function createDatabase(
     };
   } else {
     const { PGlite } = await import("@electric-sql/pglite");
-    const client = new PGlite(
+    const dataDir =
       options.dataDir === "memory://"
         ? undefined
-        : resolve(/*turbopackIgnore: true*/ options.dataDir ?? ".mefagram/db"),
-    );
-    await client.waitReady;
+        : resolve(/*turbopackIgnore: true*/ options.dataDir ?? ".mefagram/db");
+    const release = dataDir ? acquireDataLock(dataDir) : () => {};
+    let client: InstanceType<typeof PGlite>;
+    try {
+      client = new PGlite(dataDir);
+      await client.waitReady;
+    } catch (error) {
+      release();
+      throw error;
+    }
     database = {
       mode: "local",
       query: (sql, parameters) => client.query(sql, parameters),
       transaction: (operation) =>
         client.transaction((transaction) => operation(transaction)),
-      close: () => client.close(),
+      close: async () => {
+        try {
+          await client.close();
+        } finally {
+          release();
+        }
+      },
     };
   }
   try {

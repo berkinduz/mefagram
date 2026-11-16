@@ -62,6 +62,7 @@ export function createApiHandler(context: ApiContext) {
             await service.list(identity.userId, {
               search: url.searchParams.get("search") ?? "",
               archived: url.searchParams.get("archived") === "true",
+              project: url.searchParams.get("project") ?? undefined,
             }),
           );
         if (request.method === "POST")
