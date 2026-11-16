@@ -1,0 +1,10 @@
+{
+  "name": "mefagram",
+  "version": "0.2.0",
+  "description": "Diagrams your agent can edit: map workflows, plans and codebases into a local Mefagram workspace you explore in the browser, with comments that flow back to the agent.",
+  "author": { "name": "Berkin Düz" },
+  "homepage": "https://github.com/berkinduz/mefagram",
+  "repository": "https://github.com/berkinduz/mefagram",
+  "license": "MIT",
+  "keywords": ["diagram", "mermaid", "architecture", "workflow", "mcp"]
+}

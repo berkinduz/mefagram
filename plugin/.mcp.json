@@ -1,0 +1,6 @@
+{
+  "mefagram": {
+    "command": "npx",
+    "args": ["-y", "mefagram", "mcp"]
+  }
+}
