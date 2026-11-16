@@ -1,0 +1,4 @@
+# Codex loads this when you trust the project. It connects Codex in this
+# repository to the local Mefagram app; start the app with npm run dev first.
+[mcp_servers.mefagram]
+url = "http://127.0.0.1:3000/api/mcp"

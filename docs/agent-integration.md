@@ -20,13 +20,26 @@ claude mcp add --transport http --scope user mefagram http://127.0.0.1:3000/api/
 
 Check it with `claude mcp list`, or `/mcp` inside a session. If the app is not running, the server shows as failed; start it and reconnect.
 
-### Other clients
+### Codex
 
-Any MCP client that supports Streamable HTTP can use the same URL without credentials, for example Codex CLI:
+Codex reads MCP servers from `~/.codex/config.toml`; the ChatGPT desktop app, Codex CLI and IDE extension share it. Register Mefagram once:
 
 ```sh
 codex mcp add mefagram --url http://127.0.0.1:3000/api/mcp
 ```
+
+That adds:
+
+```toml
+[mcp_servers.mefagram]
+url = "http://127.0.0.1:3000/api/mcp"
+```
+
+Inside this repository, the bundled `.codex/config.toml` does the same once you trust the project. Check it with `codex mcp list`. When Codex comes with the ChatGPT app, its CLI lives at `/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex` and may not be on your `PATH`; you can also edit the file directly.
+
+### Other clients
+
+Any MCP client that supports Streamable HTTP can use the same URL without credentials.
 
 Claude Desktop and claude.ai remote connectors run outside this computer and cannot reach `127.0.0.1`; use Claude Code or another local client.
 

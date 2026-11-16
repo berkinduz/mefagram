@@ -26,9 +26,18 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
         ),
       );
   }, []);
-  const command = endpoint
-    ? `claude mcp add --transport http --scope user mefagram ${endpoint}`
-    : "";
+  const clients = [
+    {
+      name: "Claude Code",
+      command: `claude mcp add --transport http --scope user mefagram ${endpoint}`,
+      help: "Run once in a terminal to use Mefagram from every project. Inside this repository, the bundled .mcp.json connects automatically.",
+    },
+    {
+      name: "Codex",
+      command: `codex mcp add mefagram --url ${endpoint}`,
+      help: "Run once in a terminal. The Codex app, CLI and IDE extension share this setting in ~/.codex/config.toml.",
+    },
+  ];
   async function copy(value: string, which: string) {
     try {
       await navigator.clipboard.writeText(value);
@@ -62,23 +71,31 @@ export function ConnectionsDialog({ onClose }: { onClose: () => void }) {
             this computer.
           </p>
         </div>
-        <div className="connection-endpoint">
-          <div className="section-row">
-            <h3>Claude Code</h3>
-            <button
-              className="text-button"
-              onClick={() => copy(command, "command")}
-            >
-              {copied === "command" ? <Check size={14} /> : <Copy size={14} />}
-              Copy
-            </button>
+        {clients.map((client) => (
+          <div className="connection-endpoint" key={client.name}>
+            <div className="section-row">
+              <h3>{client.name}</h3>
+              <button
+                className="text-button"
+                disabled={!endpoint}
+                onClick={() => copy(client.command, client.name)}
+              >
+                {copied === client.name ? (
+                  <Check size={14} />
+                ) : (
+                  <Copy size={14} />
+                )}
+                Copy
+              </button>
+            </div>
+            <input
+              readOnly
+              aria-label={`${client.name} command`}
+              value={endpoint ? client.command : ""}
+            />
+            <p className="field-help">{client.help}</p>
           </div>
-          <input readOnly aria-label="Claude Code command" value={command} />
-          <p className="field-help">
-            Run once in a terminal to use Mefagram from every project. Inside
-            this repository, the bundled .mcp.json connects automatically.
-          </p>
-        </div>
+        ))}
         <FormError error={error} />
         <p className="connection-privacy">
           <ShieldCheck size={16} />

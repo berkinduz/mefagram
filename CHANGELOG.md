@@ -4,7 +4,7 @@
 
 - Run as a local, single-user app without accounts: remove sign-in, OAuth, consent and personal access tokens, along with better-auth and its dependencies.
 - Refuse requests whose `Host` is not loopback (DNS rebinding) and requests from other websites' origins, for pages, the API and MCP.
-- Connect Claude Code with no credentials through the bundled `.mcp.json` or `claude mcp add --transport http`.
+- Connect Claude Code or Codex with no credentials through the bundled `.mcp.json` and `.codex/config.toml`, or one `mcp add` command each.
 - Move existing diagrams, revision history and mutation receipts to the local owner on upgrade; setup removes obsolete secrets and `.mefagram/local-access.json`.
 - Remove hosted (Vercel/Netlify) deployment support.
 
