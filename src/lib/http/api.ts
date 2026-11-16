@@ -110,6 +110,17 @@ export function createApiHandler(context: ApiContext) {
         }
         if (action === "history" && request.method === "GET")
           return json(await service.revisions(identity.userId, id));
+        if (
+          action === "export" &&
+          request.method === "GET" &&
+          url.searchParams.get("format") === "mermaid"
+        )
+          return new Response(await service.mermaid(identity.userId, id), {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "private, no-store",
+            },
+          });
         if (action === "export" && request.method === "GET")
           return json(await service.export(identity.userId, id), 200, {
             "Content-Disposition": `attachment; filename="mefagram-${id}.json"`,

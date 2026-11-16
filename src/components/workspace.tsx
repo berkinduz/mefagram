@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowUpRight,
   Check,
+  Copy,
   ChevronRight,
   Download,
   Eye,
@@ -517,6 +518,31 @@ export function Workspace({
                         >
                           <Download size={15} />
                           Export as JSON
+                        </button>
+                        <button
+                          role="menuitem"
+                          onClick={async () => {
+                            setMenu(false);
+                            try {
+                              const response = await fetch(
+                                `/api/diagrams/${record.id}/export?format=mermaid`,
+                                { cache: "no-store" },
+                              );
+                              if (!response.ok) throw new Error();
+                              await navigator.clipboard.writeText(
+                                await response.text(),
+                              );
+                              setNotice({ text: "Copied as Mermaid." });
+                            } catch {
+                              setNotice({
+                                text: "Could not copy the Mermaid flowchart.",
+                                error: true,
+                              });
+                            }
+                          }}
+                        >
+                          <Copy size={15} />
+                          Copy as Mermaid
                         </button>
                         <button
                           role="menuitem"

@@ -6,6 +6,7 @@ import { MAX_TRANSFER_BYTES } from "./limits";
 import { applyPatch, operationsSchema } from "./patch";
 import { DiagramRepository, recordContent } from "./repository";
 import { englishRevisionSummary } from "./revision-summary";
+import { mermaidTitle, parseMermaid, toMermaid } from "./mermaid";
 import {
   createDiagramSchema,
   exportSchema,
@@ -15,6 +16,16 @@ import {
   type DiagramExport,
   type DiagramRecord,
 } from "./schema";
+
+export const mermaidImportSchema = z
+  .object({
+    format: z.literal("mermaid-source").optional(),
+    mermaid: z.string().min(1).max(2_000_000),
+    title: z.string().trim().min(1).max(160).optional(),
+    description: z.string().max(12000).optional(),
+    tags: z.array(z.string().trim().min(1).max(40)).max(30).optional(),
+  })
+  .strict();
 
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
@@ -217,8 +228,34 @@ export class DiagramService {
   }
 
   async import(ownerId: string, input: unknown, mutationId: string) {
+    if (
+      input &&
+      typeof input === "object" &&
+      (input as { format?: unknown }).format === "mermaid-source"
+    )
+      return this.createFromMermaid(ownerId, input, mutationId);
     const content = validated(exportSchema, input, MAX_TRANSFER_BYTES);
     return this.create(ownerId, content.diagram, mutationId);
+  }
+
+  /** Creates a diagram from a Mermaid flowchart (title from args or front matter). */
+  async createFromMermaid(ownerId: string, input: unknown, mutationId: string) {
+    const request = validated(mermaidImportSchema, input, MAX_TRANSFER_BYTES);
+    const { title } = mermaidTitle(request.mermaid);
+    return this.create(
+      ownerId,
+      {
+        title: request.title ?? title ?? "Imported diagram",
+        description: request.description ?? "",
+        tags: request.tags ?? [],
+        document: parseMermaid(request.mermaid),
+      },
+      mutationId,
+    );
+  }
+
+  async mermaid(ownerId: string, id: string, direction?: "LR" | "TD") {
+    return toMermaid(await this.get(ownerId, id), direction);
   }
 
   private async mutate(

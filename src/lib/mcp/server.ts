@@ -4,7 +4,7 @@ import { LOCAL_OWNER } from "@/lib/db/migrate";
 import { DiagramError } from "@/lib/diagrams/errors";
 import { createDiagramSchema, idSchema } from "@/lib/diagrams/schema";
 import { operationsSchema } from "@/lib/diagrams/patch";
-import { DiagramService } from "@/lib/diagrams/service";
+import { DiagramService, mermaidImportSchema } from "@/lib/diagrams/service";
 import type { ApiContext } from "@/lib/http/api";
 import { forbiddenResponse, rejectNonLocal } from "@/lib/http/local";
 import { errorResponse, readBody } from "@/lib/http/response";
@@ -108,6 +108,25 @@ export function createMcpEndpoint(context: ApiContext) {
               }),
           );
           server.registerTool(
+            "create_diagram_from_mermaid",
+            {
+              title: "Create a diagram from Mermaid",
+              description:
+                "Persist a Mermaid flowchart (flowchart/graph) as a diagram: the cheapest way to create one. Subgraphs become phases, {} decisions, ([]) results, >] notes; -.-> is feedback, --- a reference. Add notes, sources and code references afterwards with update_diagram. Use a unique mutationId.",
+              inputSchema: mermaidImportSchema
+                .omit({ format: true })
+                .extend({ mutationId: z.string().min(1).max(128) }),
+              annotations: annotations(false),
+            },
+            (args) =>
+              run(() => {
+                const { mutationId, ...request } = args;
+                return service
+                  .createFromMermaid(identity.userId, request, mutationId)
+                  .then(withLink);
+              }),
+          );
+          server.registerTool(
             "update_diagram",
             {
               title: "Update a diagram atomically",
@@ -178,14 +197,29 @@ export function createMcpEndpoint(context: ApiContext) {
           server.registerTool(
             "export_diagram",
             {
-              title: "Export an editable diagram",
+              title: "Export a diagram",
               description:
-                "Export the complete diagram in the documented Mefagram JSON format, including notes, sources, hierarchy and stable IDs.",
-              inputSchema: z.object({ id: idSchema }),
+                "Export the complete diagram. format json (default) is the lossless Mefagram format with notes, sources and stable IDs; mermaid returns a flowchart for pull requests, READMEs and chats (labels and structure only).",
+              inputSchema: z.object({
+                id: idSchema,
+                format: z.enum(["json", "mermaid"]).optional(),
+                direction: z.enum(["LR", "TD"]).optional(),
+              }),
               annotations: annotations(true),
             },
             (args) =>
-              run(() => service.export(identity.userId, args.id)),
+              run(async () =>
+                args.format === "mermaid"
+                  ? {
+                      format: "mermaid",
+                      mermaid: await service.mermaid(
+                        identity.userId,
+                        args.id,
+                        args.direction,
+                      ),
+                    }
+                  : service.export(identity.userId, args.id),
+              ),
           );
         },
         {

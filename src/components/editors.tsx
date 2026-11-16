@@ -617,7 +617,7 @@ export function ImportDialog({
   return (
     <Dialog
       title="Import diagram"
-      description="Mefagram JSON files include nodes, connections, notes and sources."
+      description="Import a Mefagram JSON export (with notes and sources) or a Mermaid flowchart."
       onClose={onClose}
     >
       <form
@@ -634,12 +634,23 @@ export function ImportDialog({
                 "VALIDATION_ERROR",
                 400,
               );
+            const text = await file.text();
             let value;
-            try {
-              value = JSON.parse(await file.text());
-            } catch {
-              throw new Error("The file does not contain valid JSON.");
-            }
+            if (/\.(mmd|mermaid)$/i.test(file.name) || !text.trim().startsWith("{"))
+              value = {
+                format: "mermaid-source",
+                mermaid: text,
+                // A `title:` front matter in the file wins over the file name.
+                title: /^\s*---/.test(text)
+                  ? undefined
+                  : file.name.replace(/\.[^.]+$/, "") || undefined,
+              };
+            else
+              try {
+                value = JSON.parse(text);
+              } catch {
+                throw new Error("The file does not contain valid JSON.");
+              }
             await onImport(value, mutationKey(value));
             onClose();
           } catch (failure) {
@@ -656,11 +667,11 @@ export function ImportDialog({
         }}
       >
         <label className="file-field">
-          JSON file
+          JSON or Mermaid file
           <input
             disabled={uncertain}
             type="file"
-            accept=".json,application/json"
+            accept=".json,application/json,.mmd,.mermaid,.md,text/plain"
             onChange={(event) => {
               setFile(event.target.files?.[0] ?? null);
               setError("");
