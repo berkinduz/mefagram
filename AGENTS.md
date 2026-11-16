@@ -13,7 +13,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Mefagram is a local, single-user app with no accounts. Each person has one installation/database; all their agents share its loopback MCP endpoint (`http://127.0.0.1:4747/api/mcp`, no credentials). Clones are independent installations, not data synchronization. Keep the common project free of personal deployment assumptions.
 - Run `npm run setup` once before starting the app. Keep `.mefagram`, `.env.local` and personal diagram exports out of git and bundles.
 - The loopback Host/Origin guard (`src/proxy.ts`, `src/lib/http/local.ts`) is the only access control. Never weaken it or bind the server to a non-loopback interface.
-- For content work, use the running MCP endpoint or `npm run agent -- ...`; do not open or edit its live PGlite files. Read [docs/agent-integration.md](docs/agent-integration.md) first.
+- For content work, use the MCP endpoint (`node bin/mefagram.mjs mcp` or HTTP) or `npm run agent -- ...`; do not open or edit its live PGlite files (a lock file refuses a second process). Read [docs/agent-integration.md](docs/agent-integration.md) first.
 - Read a diagram before patching it. Preserve stable IDs/unrelated content. Supply expected revision and a unique mutation ID; retry an identical failed response with the same ID. Reconcile revision conflicts explicitly.
 - The bundled newsletter example is fictional. Keep README, installer and UI examples aligned. Never publish an owner’s project content, credentials or screenshots as public fixtures.
 - Use English for interface text, error messages, documentation and public fixtures. Preserve user-provided diagram content; do not translate existing data during upgrades.

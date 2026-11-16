@@ -8,6 +8,15 @@
 - Move existing diagrams, revision history and mutation receipts to the local owner on upgrade; setup removes obsolete secrets and `.mefagram/local-access.json`.
 - Remove hosted (Vercel/Netlify) deployment support.
 - Serve on port 4747 by default instead of 3000, so Mefagram runs alongside other development servers.
+- Add a feedback channel: developers comment on nodes and diagrams; agents read them with `get_feedback`, reply with `resolve_feedback` and ask with `ask_developer`.
+- Stream changes live to the workspace and highlight the nodes an agent changed; agents see what the developer has open with `get_current_view`.
+- Create diagrams from Mermaid flowcharts and export Mermaid or standalone SVG; the import dialog accepts `.mmd` files.
+- Group diagrams by project and link nodes to code (file and line) that opens in VS Code, Cursor, Windsurf or Zed.
+- Return a `viewUrl` from MCP tools; `?node=` opens a node in its phase.
+- Add the `mefagram` CLI: a stdio MCP bridge that starts the workspace on demand, `start`/`stop`/`status`/`open`, and `export`/`import` for repository files.
+- Add a Claude Code plugin and marketplace with skills to map processes, map the codebase and handle feedback.
+- Simplify the reading view, and stop a clicked node from recentring the map.
+- Refuse a second process opening the same local database.
 
 ## v0.1.2 — 2026-11-05
 

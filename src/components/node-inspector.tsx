@@ -161,6 +161,7 @@ export function NodeInspector({
     (edge) => edge.source === node.id || edge.target === node.id,
   );
   const byId = new Map(record.document.nodes.map((item) => [item.id, item]));
+  const hasComments = comments.some((comment) => comment.nodeId === node.id);
   return (
     <aside className="inspector" aria-label="Node details">
       <div className="inspector-top">
@@ -180,6 +181,14 @@ export function NodeInspector({
         <h2>{node.label}</h2>
         {node.description && (
           <p className="node-description">{node.description}</p>
+        )}
+        {/* A conversation with the agent comes first when there is one. */}
+        {hasComments && (
+          <NodeComments
+            nodeId={node.id}
+            comments={comments}
+            actions={commentActions}
+          />
         )}
         {editing && (
           <div className="inspector-actions">
@@ -306,11 +315,13 @@ export function NodeInspector({
             </div>
           </section>
         )}
-        <NodeComments
-          nodeId={node.id}
-          comments={comments}
-          actions={commentActions}
-        />
+        {!hasComments && (
+          <NodeComments
+            nodeId={node.id}
+            comments={comments}
+            actions={commentActions}
+          />
+        )}
         {node.tags.length > 0 && (
           <div className="tag-list inspector-tags">
             {node.tags.map((tag) => (

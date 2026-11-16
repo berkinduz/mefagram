@@ -157,26 +157,39 @@ function RoutedEdge(props: EdgeProps<MapEdge>) {
   const moved =
     !first ||
     !last ||
-    Math.abs(first.x - props.sourceX) > 2 ||
-    Math.abs(first.y - props.sourceY) > 2 ||
-    Math.abs(last.x - props.targetX) > 2 ||
-    Math.abs(last.y - props.targetY) > 2;
+    Math.abs(first.x - props.sourceX) > 12 ||
+    Math.abs(first.y - props.sourceY) > 12 ||
+    Math.abs(last.x - props.targetX) > 12 ||
+    Math.abs(last.y - props.targetY) > 12;
   const [fallback, fallbackX, fallbackY] = getSmoothStepPath(props);
   const path = moved
     ? fallback
     : route.points
         .map((point, index) => `${index ? "L" : "M"}${point.x},${point.y}`)
         .join(" ");
-  const mid = route.points[Math.floor((route.points.length - 1) / 2)];
-  const next =
-    route.points[
-      Math.min(
-        Math.floor((route.points.length - 1) / 2) + 1,
-        route.points.length - 1,
-      )
-    ];
-  const labelX = moved ? fallbackX : (mid.x + next.x) / 2;
-  const labelY = moved ? fallbackY : (mid.y + next.y) / 2;
+  // Label the longest segment of the route.
+  let best = 0;
+  let longest = -1;
+  for (let index = 0; index < route.points.length - 1; index++) {
+    const a = route.points[index];
+    const b = route.points[index + 1];
+    const size = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+    if (size > longest) {
+      longest = size;
+      best = index;
+    }
+  }
+  const start = route.points[best];
+  const end = route.points[Math.min(best + 1, route.points.length - 1)];
+  const vertical =
+    !moved && Math.abs(start.x - end.x) < 1 && Math.abs(start.y - end.y) > 0;
+  const labelX = moved ? fallbackX : (start.x + end.x) / 2;
+  const labelY = moved ? fallbackY : (start.y + end.y) / 2;
+  // Vertical runs carry their label along the line, so it neither covers a
+  // card nor sticks out past the fitted view.
+  const anchor = vertical
+    ? "translate(-50%, -50%) rotate(-90deg)"
+    : "translate(-50%, -50%)";
   return (
     <>
       <BaseEdge
@@ -191,7 +204,7 @@ function RoutedEdge(props: EdgeProps<MapEdge>) {
           <span
             className={`edge-label nodrag nopan edge-label-${route.kind}`}
             style={{
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(${labelX}px,${labelY}px) ${anchor}`,
             }}
           >
             {route.label}

@@ -2,6 +2,12 @@
 
 Evidence is recorded separately for the application, its portable installer and a particular hosted deployment. Fixtures are synthetic. Private databases, credentials and raw local reports are excluded from Git and deployment bundles.
 
+## Agent–developer features — v0.2.0
+
+Added the feedback channel (`get_feedback`, `resolve_feedback`, `ask_developer`), `get_current_view`, live updates with change highlights, Mermaid import/export, SVG export, projects and code references, view links, the `mefagram` CLI with a stdio MCP bridge and repository export/import, a database lock, and a Claude Code plugin with skills.
+
+Local verification on 2026-11-16 passed typecheck, lint, 71 unit tests (three native PostgreSQL cases skipped without `TEST_DATABASE_URL`), the production build with bundle privacy check, and 12 production Chromium flows, including a live-update flow. A real MCP client drove `mefagram mcp` over stdio against a disposable database: the bridge started the workspace on demand, listed all 12 tools and created a diagram from Mermaid; `export` wrote JSON, Mermaid and SVG files and `import` read a Mermaid file back. A second server on the same database was refused with a clear message. `claude plugin validate` passed for the plugin and the marketplace. The npm package is not published yet, so `npx mefagram` and the plugin's MCP server work only after publishing; a source checkout works through `node bin/mefagram.mjs mcp`. `npm run verify:installation` was not rerun.
+
 ## Local mode — v0.2.0
 
 Sign-in, OAuth, consent and personal tokens were removed. Access control is now the loopback boundary: every page, asset, API and MCP request is refused unless its `Host` is loopback, and requests carrying another website's `Origin` are refused.

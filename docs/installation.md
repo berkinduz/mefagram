@@ -21,6 +21,21 @@ After the initial build, `npm start` reopens the saved workspace. `npm run dev` 
 
 Never bind the server to another interface (`--hostname 0.0.0.0`) or expose it through a tunnel or reverse proxy. Without accounts, anyone who reaches it can read and change every diagram.
 
+## Command line
+
+`mefagram` (or `npx mefagram`, or `node bin/mefagram.mjs` in a checkout) runs and connects the workspace:
+
+| Command | What it does |
+| --- | --- |
+| `mefagram start` | Run the workspace in the foreground; `--background` detaches it. |
+| `mefagram stop` / `status` | Stop a background workspace / show whether it runs. |
+| `mefagram open [id]` | Open the workspace (starting it if needed). |
+| `mefagram mcp` | MCP over stdio for agents; starts the workspace when needed. |
+| `mefagram export <dir> [--project p]` | Write diagrams as `.mefagram.json`, `.mmd` and `.svg`. |
+| `mefagram import <file>` | Import a JSON export or a Mermaid flowchart. |
+
+All accept `--port` (default 4747, or `MEFAGRAM_PORT`). An installed package keeps its database in `~/.mefagram/db` (override with `MEFAGRAM_DATA_DIR`) and background logs in `~/.mefagram`; a source checkout uses the `MEFAGRAM_DATA_DIR` from its `.env.local`. Only one process can open a local database at a time: a second one stops with a clear "already open" message instead of overwriting data.
+
 ## Configuration
 
 `.env.example` lists the options. `MEFAGRAM_DATA_DIR` selects a durable local directory (default `.mefagram/db`); `DATABASE_URL` selects a Postgres database instead. Setup saves these in `.env.local`. Avoid changing storage targets in place: use a separate checkout for a new installation and deliberately export/import or migrate data.
