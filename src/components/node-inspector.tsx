@@ -71,19 +71,11 @@ export function NodeInspector({
       </div>
       <div className="inspector-scroll">
         <h2>{node.label}</h2>
-        <p className="node-description">
-          {node.description || "No description for this node yet."}
-        </p>
-        <div className="inspector-actions">
-          <button
-            className={`button small ${focus ? "active" : ""}`}
-            aria-pressed={focus}
-            onClick={onFocus}
-          >
-            <Crosshair size={14} />
-            {focus ? "Clear focus" : "Focus connections"}
-          </button>
-          {editing && (
+        {node.description && (
+          <p className="node-description">{node.description}</p>
+        )}
+        {editing && (
+          <div className="inspector-actions">
             <button
               className="button small"
               onClick={onEdit}
@@ -92,8 +84,8 @@ export function NodeInspector({
               <Pencil size={14} />
               Edit
             </button>
-          )}
-        </div>
+          </div>
+        )}
         {children.length > 0 && (
           <section className="inspector-section">
             <div className="section-row">
@@ -116,20 +108,20 @@ export function NodeInspector({
             </div>
           </section>
         )}
-        <section className="inspector-section">
-          <h3>
-            <FileText size={14} />
-            Notes
-          </h3>
-          <div className={`prose-note ${node.notes ? "" : "muted"}`}>
-            {node.notes || "No notes yet."}
-          </div>
-        </section>
-        <section className="inspector-section">
-          <h3>
-            Sources<span>{node.sources.length}</span>
-          </h3>
-          {node.sources.length ? (
+        {node.notes && (
+          <section className="inspector-section">
+            <h3>
+              <FileText size={14} />
+              Notes
+            </h3>
+            <div className="prose-note">{node.notes}</div>
+          </section>
+        )}
+        {node.sources.length > 0 && (
+          <section className="inspector-section">
+            <h3>
+              Sources<span>{node.sources.length}</span>
+            </h3>
             <div className="source-list">
               {node.sources.map((source, index) => (
                 <a
@@ -146,17 +138,23 @@ export function NodeInspector({
                 </a>
               ))}
             </div>
-          ) : (
-            <p className="muted small-copy">
-              No sources for this node yet.
-            </p>
-          )}
-        </section>
+          </section>
+        )}
         {related.length > 0 && (
           <section className="inspector-section">
-            <h3>
-              Connections<span>{related.length}</span>
-            </h3>
+            <div className="section-row">
+              <h3>
+                Connections<span>{related.length}</span>
+              </h3>
+              <button
+                className={`text-button ${focus ? "active" : ""}`}
+                aria-pressed={focus}
+                onClick={onFocus}
+              >
+                <Crosshair size={13} />
+                {focus ? "Clear highlight" : "Highlight"}
+              </button>
+            </div>
             <div className="relation-list">
               {related.map((edge) => {
                 const outgoing = edge.source === node.id;
@@ -206,11 +204,6 @@ export function NodeInspector({
           </div>
         )}
       </div>
-      <footer className="inspector-footer">
-        <span>Saved revision {record.revision}</span>
-        <span className="saved-dot" />
-        Current
-      </footer>
     </aside>
   );
 }

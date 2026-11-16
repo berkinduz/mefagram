@@ -24,7 +24,7 @@ import {
   type Connection,
 } from "@xyflow/react";
 import {
-  ArrowDownRight,
+  Link2,
   ArrowUpRight,
   ChevronRight,
   Diamond,
@@ -97,44 +97,39 @@ const DiagramCard = memo(function DiagramCard({
           aria-label={`${item.label} connection handle`}
         />
       ))}
-      <div className="map-card-top">
+      {/* Phases and steps are the default reading; only distinct kinds are labelled. */}
+      {item.kind !== "phase" && item.kind !== "step" && (
         <span className="node-kind">
           <Icon size={13} />
           {kindLabels[item.kind]}
         </span>
+      )}
+      <h3>{item.label}</h3>
+      {item.description && <p>{item.description}</p>}
+      <div className="map-card-footer">
+        {item.childCount > 0 && (
+          <button
+            className="node-drill nodrag nopan"
+            aria-label={`Open ${item.label} phase`}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDrill(item.id);
+            }}
+          >
+            {item.childCount} {item.childCount === 1 ? "step" : "steps"}
+            <ChevronRight size={14} />
+          </button>
+        )}
         {item.sources.length > 0 && (
           <span
-            className="node-resource-count"
+            className="node-extras"
             title={`${item.sources.length} ${item.sources.length === 1 ? "source" : "sources"}`}
           >
-            {item.sources.length}{" "}
-            {item.sources.length === 1 ? "source" : "sources"}
+            <Link2 size={12} />
+            {item.sources.length}
           </span>
         )}
       </div>
-      <h3>{item.label}</h3>
-      <p>{item.description || "No description yet."}</p>
-      {item.childCount > 0 ? (
-        <button
-          className="node-drill nodrag nopan"
-          aria-label={`Open ${item.label} phase`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onDrill(item.id);
-          }}
-        >
-          <span>
-            {item.childCount}{" "}
-            {item.childCount === 1 ? "child step" : "child steps"}
-          </span>
-          <ChevronRight size={15} />
-        </button>
-      ) : item.notes ? (
-        <div className="node-note">
-          <StickyNote size={12} />
-          Has notes
-        </div>
-      ) : null}
     </article>
   );
 });
@@ -279,6 +274,7 @@ function CanvasScene(props: CanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<MapNode>([]);
   const flow = useReactFlow<MapNode, MapEdge>();
   const canvasWidth = useStore((state) => state.width);
+  const canvasHeight = useStore((state) => state.height);
   const geometryKey = JSON.stringify({
     scopeId,
     nodes: graph.nodes.map((node) => [node.id, node.childCount, node.position]),
@@ -353,20 +349,38 @@ function CanvasScene(props: CanvasProps) {
   }, [layout]);
 
   useEffect(() => {
-    if (!selectedId || !layout) return;
+    if (!selectedId || !layout || !canvasWidth || !canvasHeight) return;
     const node = layout.nodes.find((item) => item.id === selectedId);
     if (!node) return;
-    const frame = requestAnimationFrame(() =>
-      flow.setCenter(
-        node.position.x + node.width / 2,
-        node.position.y + node.height / 2,
-        { zoom: Math.max(0.65, Math.min(1, flow.getZoom())), duration: 180 },
-      ),
-    );
+    // Keep the selected node visible (search result, inspector narrowing the
+    // canvas) with the smallest possible pan. A node already on screen stays
+    // exactly where the reader clicked it.
+    const frame = requestAnimationFrame(() => {
+      const { x, y, zoom } = flow.getViewport();
+      const margin = 24;
+      const shift = (start: number, size: number, available: number) => {
+        const end = start + size;
+        if (start < margin) return margin - start;
+        if (end > available - margin)
+          return Math.max(available - margin - end, margin - start);
+        return 0;
+      };
+      const dx = shift(
+        node.position.x * zoom + x,
+        node.width * zoom,
+        canvasWidth,
+      );
+      const dy = shift(
+        node.position.y * zoom + y,
+        node.height * zoom,
+        canvasHeight,
+      );
+      if (dx || dy)
+        flow.setViewport({ x: x + dx, y: y + dy, zoom }, { duration: 180 });
+    });
     return () => cancelAnimationFrame(frame);
-    // A search result or a newly opened inspector should keep its node visible.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId, layout, canvasWidth]);
+  }, [selectedId, layout, canvasWidth, canvasHeight]);
 
   const edges: MapEdge[] = useMemo(() => {
     if (!layout) return [];
@@ -534,7 +548,7 @@ function CanvasScene(props: CanvasProps) {
             maskColor="rgba(246,248,252,.7)"
             pannable
             zoomable
-            position="bottom-right"
+            position="top-right"
           />
         )}
       </ReactFlow>
@@ -542,12 +556,6 @@ function CanvasScene(props: CanvasProps) {
         showMinimap={showMinimap}
         setShowMinimap={setShowMinimap}
       />
-      <div className="canvas-reading-hint">
-        <ArrowDownRight size={14} />
-        {editing
-          ? "Drag nodes to move them. Join their handles to connect them."
-          : "Pan to explore · Double-click to open a phase"}
-      </div>
       {(!layout || layoutError) && (
         <div className="canvas-loading" role="status">
           {layoutError ? (

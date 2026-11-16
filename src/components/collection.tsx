@@ -42,15 +42,6 @@ export function Collection({
       <div className="collection-brand">
         <Brand />
       </div>
-      <div className="workspace-owner">
-        <span className="owner-avatar" aria-hidden="true">
-          M
-        </span>
-        <div>
-          <strong>My workspace</strong>
-          <span>On this computer</span>
-        </div>
-      </div>
       <div className="collection-search">
         <Search size={15} />
         <input

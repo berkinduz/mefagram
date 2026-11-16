@@ -15,6 +15,12 @@ async function create(
   expect(response.status()).toBe(201);
   return response.json();
 }
+async function reloadLatest(page: Page) {
+  await page.getByRole("button", { name: "Diagram actions" }).click();
+  await page
+    .getByRole("menuitem", { name: "Reload latest revision" })
+    .click();
+}
 function deferred() {
   let resolve!: () => void;
   const promise = new Promise<void>((done) => {
@@ -41,7 +47,7 @@ test("ignores a late refresh from a diagram that is no longer active", async ({
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Refresh diagram" }).click();
+  await reloadLatest(page);
   await captured.promise;
   await page
     .getByRole("navigation", { name: "Diagram collection" })
@@ -132,7 +138,7 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
     },
     { times: 1 },
   );
-  await page.getByRole("button", { name: "Refresh diagram" }).click();
+  await reloadLatest(page);
   await captured.promise;
   const changed = await page.request.patch(`/api/diagrams/${a.id}`, {
     headers: {
@@ -149,8 +155,8 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
     },
   });
   expect(changed.ok()).toBe(true);
-  await page.getByRole("button", { name: "Refresh diagram" }).click();
-  await expect(page.locator(".map-footer")).toContainText("Revision 2");
+  await reloadLatest(page);
+  await expect(page.locator(".document-meta")).toContainText("Revision 2");
   const completed = page.waitForResponse((response) =>
     response.url().endsWith(`/api/diagrams/${a.id}`),
   );
@@ -162,7 +168,7 @@ test("does not regress a newer revision when an earlier refresh arrives last", a
         requestAnimationFrame(() => requestAnimationFrame(() => done())),
       ),
   );
-  await expect(page.locator(".map-footer")).toContainText("Revision 2");
+  await expect(page.locator(".document-meta")).toContainText("Revision 2");
   await expect(page.locator(".document-title-row")).toContainText(
     "New revision description",
   );

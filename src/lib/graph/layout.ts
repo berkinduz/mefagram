@@ -30,7 +30,12 @@ interface LayoutOptions {
 }
 
 const width = 250;
-const heightOf = (node: ProjectedNode) => (node.childCount ? 178 : 152);
+// Cards show a title and up to two description lines. A footer row appears
+// for child steps or sources; decision, note and result cards add a kind label.
+const heightOf = (node: ProjectedNode) =>
+  110 +
+  (node.childCount || node.sources.length ? 26 : 0) +
+  (node.kind === "phase" || node.kind === "step" ? 0 : 20);
 
 function linearOrder(graph: ProjectedGraph) {
   const flows = graph.edges.filter((edge) => edge.kind === "flow");

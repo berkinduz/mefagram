@@ -5,7 +5,6 @@ import {
   Archive,
   ArrowLeft,
   ArrowUpRight,
-  BookOpen,
   Check,
   ChevronRight,
   Download,
@@ -407,6 +406,9 @@ export function Workspace({
   const closeModal = () =>
     setModal((current) => (current === modal ? null : current));
   const viewScope = breadcrumbs.at(-1);
+  const hasFeedback = Boolean(
+    record?.document.edges.some((edge) => edge.kind === "feedback"),
+  );
 
   return (
     <div className="app-shell">
@@ -427,31 +429,20 @@ export function Workspace({
         {record ? (
           <>
             <header className="document-header">
-              <div className="document-breadcrumb">
-                <BookOpen size={14} />
-                <span>Diagrams</span>
-                <ChevronRight size={13} />
-                <span>{record.tags[0] ?? "Workflow map"}</span>
-                <div className="header-save-status" role="status">
-                  {saving ? (
-                    <>
-                      <LoaderCircle className="spin" size={13} />
-                      Saving
-                    </>
-                  ) : (
-                    <>
-                      <Check size={13} />
-                      Saved
-                    </>
-                  )}
-                </div>
-              </div>
               <div className="document-title-row">
                 <div>
                   <h1>{record.title}</h1>
                   <p>{record.description}</p>
                 </div>
                 <div className="document-actions">
+                  <span className="header-save-status" role="status">
+                    {saving && (
+                      <>
+                        <LoaderCircle className="spin" size={13} />
+                        Saving
+                      </>
+                    )}
+                  </span>
                   <button
                     className={`button small ${editing ? "edit-active" : ""}`}
                     onClick={() => setEditing(!editing)}
@@ -492,6 +483,27 @@ export function Workspace({
                         </button>
                         <button
                           role="menuitem"
+                          onClick={async () => {
+                            setMenu(false);
+                            const navigation = navigationVersion.current;
+                            try {
+                              const next = await api<DiagramRecord>(
+                                `/api/diagrams/${record.id}`,
+                              );
+                              if (acceptRecord(next, navigation))
+                                setNotice({
+                                  text: "Opened the latest saved revision.",
+                                });
+                            } catch (failure) {
+                              showError(failure);
+                            }
+                          }}
+                        >
+                          <RefreshCw size={15} />
+                          Reload latest revision
+                        </button>
+                        <button
+                          role="menuitem"
                           onClick={() => {
                             void exportRecord();
                             setMenu(false);
@@ -528,18 +540,11 @@ export function Workspace({
                 </div>
               </div>
               <div className="document-meta">
-                <span className="diagram-type">
-                  <GitBranch size={13} />
-                  Workflow map
-                </span>
                 <span>
                   {record.document.nodes.length}{" "}
                   {record.document.nodes.length === 1 ? "node" : "nodes"}
                 </span>
-                <span>
-                  {record.document.edges.length}{" "}
-                  {record.document.edges.length === 1 ? "connection" : "connections"}
-                </span>
+                <span>Revision {record.revision}</span>
                 {record.tags.includes("Starter draft") && (
                   <span className="draft-label">Starter draft</span>
                 )}
@@ -551,6 +556,50 @@ export function Workspace({
             <div className="workspace-content">
               <section className="map-workspace" aria-label="Diagram view">
                 <div className="map-toolbar">
+                  <div className="scope-bar">
+                    {scopeId ? (
+                      <>
+                        <button
+                          className="scope-back"
+                          aria-label="Back to overview"
+                          onClick={() => {
+                            setScopeId(null);
+                            setSelectedId(null);
+                            setEdgeIds([]);
+                            setFocus(false);
+                          }}
+                        >
+                          <ArrowLeft size={14} />
+                          Overview
+                        </button>
+                        {breadcrumbs.map((node) => (
+                          <span key={node.id} className="scope-crumb">
+                            <ChevronRight size={12} />
+                            <button onClick={() => drill(node.id)}>
+                              {node.label}
+                            </button>
+                          </span>
+                        ))}
+                      </>
+                    ) : (
+                      <span className="scope-label">
+                        <Network size={14} />
+                        Overview
+                      </span>
+                    )}
+                  </div>
+                  {hasFeedback && (
+                    <label className="feedback-toggle">
+                      <input
+                        type="checkbox"
+                        checked={showFeedback}
+                        onChange={(event) =>
+                          setShowFeedback(event.target.checked)
+                        }
+                      />
+                      <span>Feedback loops</span>
+                    </label>
+                  )}
                   <div className="view-tabs">
                     <button
                       className={view === "map" ? "active" : ""}
@@ -615,71 +664,6 @@ export function Workspace({
                       </div>
                     )}
                   </div>
-                  <button
-                    className="icon-button refresh-button"
-                    title="Open latest save"
-                    aria-label="Refresh diagram"
-                    onClick={async () => {
-                      const navigation = navigationVersion.current;
-                      try {
-                        const next = await api<DiagramRecord>(
-                          `/api/diagrams/${record.id}`,
-                        );
-                        if (acceptRecord(next, navigation))
-                          setNotice({ text: "Opened the latest saved revision." });
-                      } catch (failure) {
-                        showError(failure);
-                      }
-                    }}
-                  >
-                    <RefreshCw size={15} />
-                  </button>
-                </div>
-                <div className="scope-bar">
-                  {scopeId ? (
-                    <>
-                      <button
-                        className="scope-back"
-                        aria-label="Back to overview"
-                        onClick={() => {
-                          setScopeId(null);
-                          setSelectedId(null);
-                          setEdgeIds([]);
-                          setFocus(false);
-                        }}
-                      >
-                        <ArrowLeft size={14} />
-                        Overview
-                      </button>
-                      {breadcrumbs.map((node) => (
-                        <span key={node.id} className="scope-crumb">
-                          <ChevronRight size={12} />
-                          <button onClick={() => drill(node.id)}>
-                            {node.label}
-                          </button>
-                        </span>
-                      ))}
-                    </>
-                  ) : (
-                    <span className="scope-label">
-                      <Network size={14} />
-                      Overview
-                      <span>
-                        {visible?.nodes.length}{" "}
-                        {visible?.nodes.length === 1 ? "main step" : "main steps"}
-                      </span>
-                    </span>
-                  )}
-                  <label className="feedback-toggle">
-                    <input
-                      type="checkbox"
-                      checked={showFeedback}
-                      onChange={(event) =>
-                        setShowFeedback(event.target.checked)
-                      }
-                    />
-                    <span>Feedback</span>
-                  </label>
                 </div>
                 {editing && (
                   <div className="edit-toolbar">
@@ -821,27 +805,6 @@ export function Workspace({
                     </div>
                   )}
                 </div>
-                <footer className="map-footer">
-                  <span>
-                    {editing
-                      ? "Changes appear after the save is confirmed."
-                      : "Reading mode"}
-                    <span className="footer-divider" />
-                    Revision {record.revision}
-                  </span>
-                  <div className="map-legend">
-                    <span>
-                      <i />
-                      Flow
-                    </span>
-                    {showFeedback && (
-                      <span>
-                        <i className="feedback-line" />
-                        Feedback
-                      </span>
-                    )}
-                  </div>
-                </footer>
               </section>
               {selected && (
                 <NodeInspector
