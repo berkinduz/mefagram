@@ -5,7 +5,7 @@ Releases are published from GitHub Actions (`.github/workflows/release.yml`), ne
 ## First release
 
 1. Create or sign in to an npm account with two-factor authentication.
-2. Create a **granular access token** with read and write access to packages (it will cover the new `mefagram` package), and add it to the GitHub repository as the secret `NPM_TOKEN` (Settings → Secrets and variables → Actions). The workflow runs in an environment named `npm`; GitHub creates it on first use, and you can add required reviewers to it.
+2. Create a **granular access token** with read and write access to packages (it will cover the new `mefagram` package) and **"Bypass two-factor authentication (2FA)" checked**: CI cannot type a one-time password, and without it the publish fails with `EOTP`. A short expiry is enough. Add it to the GitHub repository as the secret `NPM_TOKEN` (Settings → Secrets and variables → Actions). The workflow runs in an environment named `npm`; GitHub creates it on first use, and you can add required reviewers to it.
 3. Make sure `package.json` has the version you want and `CHANGELOG.md` describes it, then tag and push:
 
    ```sh
