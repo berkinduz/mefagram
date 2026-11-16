@@ -15,6 +15,8 @@ export function recordFromRow(row: Row): DiagramRecord {
     title: row.title as string,
     description: row.description as string,
     tags: row.tags as string[],
+    project: (row.project as string) ?? "",
+    projectRoot: (row.project_root as string) ?? "",
     document: row.document as DiagramContent["document"],
     revision: Number(row.revision),
     archived: Boolean(row.archived),
@@ -27,6 +29,8 @@ export function recordContent(record: DiagramRecord) {
     title: record.title,
     description: record.description,
     tags: record.tags,
+    project: record.project,
+    projectRoot: record.projectRoot,
     document: record.document,
     archived: record.archived,
   };
@@ -37,20 +41,27 @@ export class DiagramRepository {
 
   async list(
     ownerId: string,
-    options: { search?: string; archived?: boolean; limit?: number },
+    options: {
+      search?: string;
+      archived?: boolean;
+      limit?: number;
+      project?: string;
+    },
   ) {
     const query = options.search?.trim() ?? "";
     const result = await this.database.query(
-      `SELECT id, title, description, tags, revision, archived, updated_at,
+      `SELECT id, title, description, tags, project, revision, archived, updated_at,
       jsonb_array_length(document->'nodes') AS node_count, jsonb_array_length(document->'edges') AS edge_count
       FROM diagrams WHERE owner_id = $1 AND archived = $2
       AND ($3 = '' OR STRPOS(LOWER(title || ' ' || description || ' ' || tags::text || ' ' || document::text), LOWER($3)) > 0)
+      AND ($5::text IS NULL OR project = $5)
       ORDER BY updated_at DESC, id LIMIT $4`,
       [
         ownerId,
         Boolean(options.archived),
         query,
         Math.max(1, Math.min(500, options.limit ?? 200)),
+        options.project ?? null,
       ],
     );
     return result.rows.map(
@@ -60,6 +71,7 @@ export class DiagramRepository {
           title: row.title as string,
           description: row.description as string,
           tags: row.tags as string[],
+          project: (row.project as string) ?? "",
           revision: Number(row.revision),
           archived: Boolean(row.archived),
           updatedAt: iso(row.updated_at),
@@ -90,8 +102,8 @@ export class DiagramRepository {
     content: DiagramContent,
   ) {
     const result = await transaction.query(
-      `INSERT INTO diagrams (id, owner_id, title, description, tags, document)
-      VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb) RETURNING *`,
+      `INSERT INTO diagrams (id, owner_id, title, description, tags, document, project, project_root)
+      VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8) RETURNING *`,
       [
         id,
         ownerId,
@@ -99,6 +111,8 @@ export class DiagramRepository {
         content.description,
         JSON.stringify(content.tags),
         JSON.stringify(content.document),
+        content.project ?? "",
+        content.projectRoot ?? "",
       ],
     );
     return recordFromRow(result.rows[0]);
@@ -113,7 +127,8 @@ export class DiagramRepository {
   ) {
     const result = await transaction.query(
       `UPDATE diagrams SET title = $1, description = $2, tags = $3::jsonb,
-      document = $4::jsonb, archived = $5, revision = revision + 1, updated_at = NOW()
+      document = $4::jsonb, archived = $5, project = $9, project_root = $10,
+      revision = revision + 1, updated_at = NOW()
       WHERE owner_id = $6 AND id = $7 AND revision = $8 RETURNING *`,
       [
         content.title,
@@ -124,6 +139,8 @@ export class DiagramRepository {
         ownerId,
         id,
         expectedRevision,
+        content.project ?? "",
+        content.projectRoot ?? "",
       ],
     );
     if (!result.rows[0]) {

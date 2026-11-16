@@ -60,6 +60,7 @@ export function DiagramEditor({
   const [title, setTitle] = useState(record?.title ?? "");
   const [description, setDescription] = useState(record?.description ?? "");
   const [tags, setTags] = useState(record?.tags.join(", ") ?? "");
+  const [project, setProject] = useState(record?.project ?? "");
   const mutationKey = useMutationKey();
   const [uncertain, setUncertain] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -69,7 +70,12 @@ export function DiagramEditor({
     setBusy(true);
     setError("");
     try {
-      const values = { title: title.trim(), description, tags: tagsFrom(tags) };
+      const values = {
+        title: title.trim(),
+        description,
+        tags: tagsFrom(tags),
+        project: project.trim(),
+      };
       if (baseline && onUpdate) {
         const changes = Object.fromEntries(
           Object.entries(values).filter(
@@ -85,7 +91,11 @@ export function DiagramEditor({
           );
       } else if (onCreate)
         await onCreate(
-          { ...values, document: { schemaVersion: 1, nodes: [], edges: [] } },
+          {
+            projectRoot: "",
+            ...values,
+            document: { schemaVersion: 1, nodes: [], edges: [] },
+          },
           mutationKey(values),
         );
       onClose();
@@ -122,6 +132,16 @@ export function DiagramEditor({
             maxLength={160}
             autoFocus
             placeholder="For example: Product development"
+          />
+        </label>
+        <label>
+          Project
+          <input
+            readOnly={uncertain}
+            value={project}
+            onChange={(event) => setProject(event.target.value)}
+            maxLength={80}
+            placeholder="Optional, for example the repository name"
           />
         </label>
         <label>
@@ -232,7 +252,7 @@ export function NodeEditor({
           );
       } else
         await onSave(
-          [{ op: "add_node", node: { id, ...values } }],
+          [{ op: "add_node", node: { id, code: [], ...values } }],
           mutationKey(values),
         );
       onClose();

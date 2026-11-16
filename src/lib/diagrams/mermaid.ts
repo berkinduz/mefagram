@@ -187,6 +187,7 @@ export function parseMermaid(source: string): DiagramDocument {
       notes: "",
       sources: [],
       tags: [],
+      code: [],
       parentId: parents.at(-1) ?? null,
     });
     return id;

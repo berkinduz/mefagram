@@ -159,6 +159,8 @@ export function applyPatch(
       title: next.title,
       description: next.description,
       tags: next.tags,
+      project: next.project,
+      projectRoot: next.projectRoot,
       document: next.document,
     }),
     archived: next.archived,

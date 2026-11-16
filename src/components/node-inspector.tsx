@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import {
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
   ChevronRight,
+  Code2,
   Crosshair,
   ExternalLink,
   FileText,
@@ -24,6 +26,105 @@ const kindLabels = {
   note: "Note",
   result: "Result",
 };
+const EDITORS = {
+  vscode: "VS Code",
+  cursor: "Cursor",
+  windsurf: "Windsurf",
+  zed: "Zed",
+} as const;
+type Editor = keyof typeof EDITORS;
+const EDITOR_KEY = "mefagram-editor";
+
+function readEditor(): Editor {
+  try {
+    const value = localStorage.getItem(EDITOR_KEY);
+    if (value && value in EDITORS) return value as Editor;
+  } catch {
+    /* Storage can be unavailable; fall back to VS Code. */
+  }
+  return "vscode";
+}
+
+/** Absolute path for a code reference, or null when it cannot be resolved. */
+function absolutePath(path: string, root: string) {
+  if (/^(\/|[A-Za-z]:[\\/])/.test(path)) return path;
+  if (!root) return null;
+  return `${root.replace(/[\\/]+$/, "")}/${path.replace(/^\.?[\\/]/, "")}`;
+}
+
+function editorLink(editor: Editor, path: string, line?: number) {
+  const normalized = path.replace(/\\/g, "/");
+  const slashed = normalized.startsWith("/") ? normalized : `/${normalized}`;
+  const suffix = line ? `:${line}` : "";
+  return `${editor}://file${encodeURI(slashed)}${suffix}`;
+}
+
+function CodeSection({ node, root }: { node: DiagramNode; root: string }) {
+  const [editor, setEditor] = useState<Editor>(readEditor);
+  return (
+    <section className="inspector-section">
+      <div className="section-row">
+        <h3>
+          <Code2 size={14} />
+          Code<span>{node.code.length}</span>
+        </h3>
+        <select
+          className="editor-select"
+          aria-label="Open code in"
+          value={editor}
+          onChange={(event) => {
+            const next = event.target.value as Editor;
+            setEditor(next);
+            try {
+              localStorage.setItem(EDITOR_KEY, next);
+            } catch {
+              /* Not persisted; still used for this view. */
+            }
+          }}
+        >
+          {Object.entries(EDITORS).map(([id, name]) => (
+            <option key={id} value={id}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="source-list code-list">
+        {node.code.map((ref, index) => {
+          const absolute = absolutePath(ref.path, root);
+          const text = `${ref.path}${ref.line ? `:${ref.line}` : ""}`;
+          const body = (
+            <>
+              <span>
+                <strong>{ref.label || text}</strong>
+                {ref.label && <small>{text}</small>}
+              </span>
+              {absolute && <ExternalLink size={14} />}
+            </>
+          );
+          return absolute ? (
+            <a
+              key={`${ref.path}-${ref.line}-${index}`}
+              href={editorLink(editor, absolute, ref.line)}
+              title={`Open in ${EDITORS[editor]}`}
+            >
+              {body}
+            </a>
+          ) : (
+            <div
+              key={`${ref.path}-${ref.line}-${index}`}
+              className="code-ref-plain"
+              title="Set the diagram's projectRoot to open relative paths"
+            >
+              {body}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export function NodeInspector({
   record,
   node,
@@ -116,6 +217,9 @@ export function NodeInspector({
             </h3>
             <div className="prose-note">{node.notes}</div>
           </section>
+        )}
+        {node.code?.length > 0 && (
+          <CodeSection node={node} root={record.projectRoot ?? ""} />
         )}
         {node.sources.length > 0 && (
           <section className="inspector-section">

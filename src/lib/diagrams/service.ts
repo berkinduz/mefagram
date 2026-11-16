@@ -24,6 +24,8 @@ export const mermaidImportSchema = z
     title: z.string().trim().min(1).max(160).optional(),
     description: z.string().max(12000).optional(),
     tags: z.array(z.string().trim().min(1).max(40)).max(30).optional(),
+    project: z.string().trim().max(80).optional(),
+    projectRoot: z.string().trim().max(1024).optional(),
   })
   .strict();
 
@@ -51,7 +53,12 @@ export class DiagramService {
 
   list(
     ownerId: string,
-    options: { search?: string; archived?: boolean; limit?: number } = {},
+    options: {
+      search?: string;
+      archived?: boolean;
+      limit?: number;
+      project?: string;
+    } = {},
   ) {
     return this.repository.list(ownerId, options);
   }
@@ -188,12 +195,19 @@ export class DiagramService {
       mutationId,
       { action: "restore", id, revision, expectedRevision },
       async (transaction) => {
-        const content = await this.repository.revisionContent(
+        const restored = await this.repository.revisionContent(
           transaction,
           ownerId,
           id,
           revision,
         );
+        // Revisions saved before projects existed keep the current project.
+        const current = await this.repository.get(ownerId, id, transaction);
+        const content = {
+          ...restored,
+          project: restored.project ?? current.project,
+          projectRoot: restored.projectRoot ?? current.projectRoot,
+        };
         const saved = await this.repository.update(
           transaction,
           ownerId,
@@ -222,6 +236,8 @@ export class DiagramService {
         title: record.title,
         description: record.description,
         tags: record.tags,
+        project: record.project,
+        projectRoot: record.projectRoot,
         document: record.document,
       },
     };
@@ -248,6 +264,8 @@ export class DiagramService {
         title: request.title ?? title ?? "Imported diagram",
         description: request.description ?? "",
         tags: request.tags ?? [],
+        project: request.project ?? "",
+        projectRoot: request.projectRoot ?? "",
         document: parseMermaid(request.mermaid),
       },
       mutationId,

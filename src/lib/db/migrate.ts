@@ -42,3 +42,15 @@ WHERE owner_id <> '${LOCAL_OWNER}' AND NOT EXISTS (
 UPDATE diagrams SET owner_id = '${LOCAL_OWNER}' WHERE owner_id <> '${LOCAL_OWNER}';
 DROP TABLE IF EXISTS personal_tokens;
 `;
+
+// Later schema changes, applied in order after diagrams-v1 and local-owner-v1.
+export const laterMigrations: { id: string; sql: string }[] = [
+  {
+    id: "projects-v1",
+    sql: `
+ALTER TABLE diagrams ADD COLUMN IF NOT EXISTS project TEXT NOT NULL DEFAULT '';
+ALTER TABLE diagrams ADD COLUMN IF NOT EXISTS project_root TEXT NOT NULL DEFAULT '';
+CREATE INDEX IF NOT EXISTS diagrams_owner_project ON diagrams(owner_id, project, updated_at DESC);
+`,
+  },
+];

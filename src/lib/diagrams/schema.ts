@@ -18,6 +18,18 @@ export const sourceSchema = z
       ),
   })
   .strict();
+export const codeRefSchema = z
+  .object({
+    path: z
+      .string()
+      .trim()
+      .min(1)
+      .max(1024)
+      .refine((value) => !/[\n\r\0]/.test(value), "Invalid code path."),
+    line: z.number().int().positive().max(10_000_000).optional(),
+    label: z.string().trim().max(160).optional(),
+  })
+  .strict();
 export const nodeSchema = z
   .object({
     id: idSchema,
@@ -29,6 +41,7 @@ export const nodeSchema = z
     notes: z.string().max(50000).default(""),
     sources: z.array(sourceSchema).max(30).default([]),
     tags: z.array(tagSchema).max(20).default([]),
+    code: z.array(codeRefSchema).max(30).default([]),
     parentId: idSchema.nullable().optional(),
     position: z
       .object({ x: z.number().finite(), y: z.number().finite() })
@@ -112,6 +125,18 @@ export const metadataSchema = z.object({
   title: z.string().trim().min(1).max(160),
   description: z.string().max(12000).default(""),
   tags: z.array(tagSchema).max(30).default([]),
+  /** Groups diagrams by repository or product, e.g. "mefagram". */
+  project: z.string().trim().max(80).default(""),
+  /** Absolute folder that node code paths are relative to. */
+  projectRoot: z
+    .string()
+    .trim()
+    .max(1024)
+    .refine(
+      (value) => !value || /^(\/|[A-Za-z]:[\\/])/.test(value),
+      "projectRoot must be an absolute path.",
+    )
+    .default(""),
 });
 // Patch schemas deliberately remove creation defaults. Zod applies defaults even
 // inside partial objects, which would otherwise erase fields omitted by an agent.
@@ -119,6 +144,8 @@ export const metadataChangesSchema = metadataSchema
   .extend({
     description: metadataSchema.shape.description.removeDefault(),
     tags: metadataSchema.shape.tags.removeDefault(),
+    project: metadataSchema.shape.project.removeDefault(),
+    projectRoot: metadataSchema.shape.projectRoot.removeDefault(),
   })
   .partial();
 export const nodeChangesSchema = nodeSchema
@@ -129,6 +156,7 @@ export const nodeChangesSchema = nodeSchema
     notes: nodeSchema.shape.notes.removeDefault(),
     sources: nodeSchema.shape.sources.removeDefault(),
     tags: nodeSchema.shape.tags.removeDefault(),
+    code: nodeSchema.shape.code.removeDefault(),
   })
   .partial();
 export const edgeChangesSchema = edgeSchema
@@ -169,6 +197,7 @@ export interface DiagramSummary {
   title: string;
   description: string;
   tags: string[];
+  project: string;
   revision: number;
   archived: boolean;
   updatedAt: string;

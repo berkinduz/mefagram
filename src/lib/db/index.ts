@@ -1,5 +1,9 @@
 import { resolve } from "node:path";
-import { diagramMigration, localOwnerMigration } from "./migrate";
+import {
+  diagramMigration,
+  laterMigrations,
+  localOwnerMigration,
+} from "./migrate";
 
 export interface SqlExecutor {
   query<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -93,6 +97,17 @@ export async function createDatabase(
         await transaction.query(
           "INSERT INTO mefagram_migrations (id) VALUES ($1)",
           ["local-owner-v1"],
+        );
+      }
+      for (const migration of laterMigrations) {
+        if (ids.has(migration.id)) continue;
+        for (const statement of migration.sql
+          .split(";")
+          .filter((value) => value.trim()))
+          await transaction.query(statement);
+        await transaction.query(
+          "INSERT INTO mefagram_migrations (id) VALUES ($1)",
+          [migration.id],
         );
       }
     });

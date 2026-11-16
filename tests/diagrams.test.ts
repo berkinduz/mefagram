@@ -60,7 +60,7 @@ describe("persistent diagram operations", () => {
         nodes: Array.from({ length: 40 }, (_, index) => ({
           id: `n${index}`,
           label: "Synthetic",
-          notes: "x".repeat(49898),
+          notes: "x".repeat(49887),
         })),
         edges: [],
       },
