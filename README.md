@@ -24,7 +24,7 @@ npm run build
 npm start
 ```
 
-Open [127.0.0.1:3000](http://127.0.0.1:3000). The example is a small fictional newsletter workflow; leave out `--example newsletter` to start empty.
+Open [127.0.0.1:4747](http://127.0.0.1:4747). The example is a small fictional newsletter workflow; leave out `--example newsletter` to start empty.
 
 ## Connect your agent
 
@@ -33,13 +33,13 @@ Mefagram speaks [MCP](https://modelcontextprotocol.io). Keep the app running, th
 **Claude Code**
 
 ```sh
-claude mcp add --transport http --scope user mefagram http://127.0.0.1:3000/api/mcp
+claude mcp add --transport http --scope user mefagram http://127.0.0.1:4747/api/mcp
 ```
 
 **Codex** (CLI, IDE extension and the ChatGPT app share this)
 
 ```sh
-codex mcp add mefagram --url http://127.0.0.1:3000/api/mcp
+codex mcp add mefagram --url http://127.0.0.1:4747/api/mcp
 ```
 
 Working inside this repository? Claude Code and Codex pick up the bundled `.mcp.json` and `.codex/config.toml` automatically after you approve or trust the project. The in-app **Agent connections** panel has these commands ready to copy.

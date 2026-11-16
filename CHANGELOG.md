@@ -7,6 +7,7 @@
 - Connect Claude Code or Codex with no credentials through the bundled `.mcp.json` and `.codex/config.toml`, or one `mcp add` command each.
 - Move existing diagrams, revision history and mutation receipts to the local owner on upgrade; setup removes obsolete secrets and `.mefagram/local-access.json`.
 - Remove hosted (Vercel/Netlify) deployment support.
+- Serve on port 4747 by default instead of 3000, so Mefagram runs alongside other development servers.
 
 ## v0.1.2 — 2026-11-05
 

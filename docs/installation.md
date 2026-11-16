@@ -13,11 +13,11 @@ npm run build
 npm start
 ```
 
-Open `http://127.0.0.1:3000`. There is no login. The workspace belongs to whoever uses this computer, and the server refuses requests that are not addressed to `localhost`, `127.0.0.1` or `[::1]`, or that come from another website.
+Open `http://127.0.0.1:4747`. There is no login. The workspace belongs to whoever uses this computer, and the server refuses requests that are not addressed to `localhost`, `127.0.0.1` or `[::1]`, or that come from another website.
 
 New installations start empty. For the optional fictional Relay newsletter workflow, stop the app and run `npm run setup -- --example newsletter`, then start it again. Repeating this command reuses the original sample creation; edits are preserved and no duplicate is created. You can also choose the sample from the empty workspace.
 
-After the initial build, `npm start` reopens the saved workspace. `npm run dev` runs the development server. Keep one Node process per local PGlite directory. If port 3000 is occupied, start with `npm start -- --port 3200` and use that port in your MCP client configuration (including `.mcp.json` and `.codex/config.toml`).
+After the initial build, `npm start` reopens the saved workspace. `npm run dev` runs the development server. Keep one Node process per local PGlite directory. Mefagram uses port 4747 so it does not collide with other development servers (Next.js and others default to 3000). If 4747 is occupied, start with `npm start -- --port 4800` and use that port in your MCP client configuration (including `.mcp.json` and `.codex/config.toml`).
 
 Never bind the server to another interface (`--hostname 0.0.0.0`) or expose it through a tunnel or reverse proxy. Without accounts, anyone who reaches it can read and change every diagram.
 

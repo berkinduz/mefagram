@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "postinstall": "node scripts/copy-layout-worker.mjs",
-    "dev": "next dev --hostname 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1 --port 4747",
     "build": "next build",
-    "start": "next start --hostname 127.0.0.1",
+    "start": "next start --hostname 127.0.0.1 --port 4747",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

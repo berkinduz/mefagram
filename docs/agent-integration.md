@@ -6,7 +6,7 @@ Use Mefagram when an assistant needs to maintain persistent workflow diagrams, p
 
 ## Endpoint and access
 
-Streamable HTTP MCP: `http://127.0.0.1:3000/api/mcp`. There are no accounts or tokens. Every agent on this computer shares the same workspace while the app runs.
+Streamable HTTP MCP: `http://127.0.0.1:4747/api/mcp`. There are no accounts or tokens. Every agent on this computer shares the same workspace while the app runs.
 
 Access control is the loopback boundary. The server listens on `127.0.0.1` and refuses any request whose `Host` is not `localhost`, `127.0.0.1` or `[::1]` (DNS rebinding) and any request carrying another website's `Origin` (cross-site requests). Do not expose the port through a tunnel, reverse proxy or `--hostname 0.0.0.0`: anyone who can reach it can read and change every diagram.
 
@@ -15,7 +15,7 @@ Access control is the loopback boundary. The server listens on `127.0.0.1` and r
 Inside this repository, the bundled `.mcp.json` registers the server; Claude Code asks once before enabling it. To use Mefagram from any project:
 
 ```sh
-claude mcp add --transport http --scope user mefagram http://127.0.0.1:3000/api/mcp
+claude mcp add --transport http --scope user mefagram http://127.0.0.1:4747/api/mcp
 ```
 
 Check it with `claude mcp list`, or `/mcp` inside a session. If the app is not running, the server shows as failed; start it and reconnect.
@@ -25,14 +25,14 @@ Check it with `claude mcp list`, or `/mcp` inside a session. If the app is not r
 Codex reads MCP servers from `~/.codex/config.toml`; the ChatGPT desktop app, Codex CLI and IDE extension share it. Register Mefagram once:
 
 ```sh
-codex mcp add mefagram --url http://127.0.0.1:3000/api/mcp
+codex mcp add mefagram --url http://127.0.0.1:4747/api/mcp
 ```
 
 That adds:
 
 ```toml
 [mcp_servers.mefagram]
-url = "http://127.0.0.1:3000/api/mcp"
+url = "http://127.0.0.1:4747/api/mcp"
 ```
 
 Inside this repository, the bundled `.codex/config.toml` does the same once you trust the project. Check it with `codex mcp list`. When Codex comes with the ChatGPT app, its CLI lives at `/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex` and may not be on your `PATH`; you can also edit the file directly.
@@ -55,7 +55,7 @@ Claude Desktop and claude.ai remote connectors run outside this computer and can
 | `restore_diagram`     | Restore a snapshot as a new revision                                     |
 | `export_diagram`      | Return portable Mefagram JSON                                            |
 
-`npm run agent -- tools` returns exact input schemas. `npm run agent -- call <tool> <arguments.json>` is a thin real MCP client, useful for agents with terminal access. It connects to `http://127.0.0.1:3000` unless `MEFAGRAM_URL` is set, and exits nonzero on tool errors.
+`npm run agent -- tools` returns exact input schemas. `npm run agent -- call <tool> <arguments.json>` is a thin real MCP client, useful for agents with terminal access. It connects to `http://127.0.0.1:4747` unless `MEFAGRAM_URL` is set, and exits nonzero on tool errors.
 
 ## Reliable updates
 

@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Mefagram workspace
 
-- Mefagram is a local, single-user app with no accounts. Each person has one installation/database; all their agents share its loopback MCP endpoint (`http://127.0.0.1:3000/api/mcp`, no credentials). Clones are independent installations, not data synchronization. Keep the common project free of personal deployment assumptions.
+- Mefagram is a local, single-user app with no accounts. Each person has one installation/database; all their agents share its loopback MCP endpoint (`http://127.0.0.1:4747/api/mcp`, no credentials). Clones are independent installations, not data synchronization. Keep the common project free of personal deployment assumptions.
 - Run `npm run setup` once before starting the app. Keep `.mefagram`, `.env.local` and personal diagram exports out of git and bundles.
 - The loopback Host/Origin guard (`src/proxy.ts`, `src/lib/http/local.ts`) is the only access control. Never weaken it or bind the server to a non-loopback interface.
 - For content work, use the running MCP endpoint or `npm run agent -- ...`; do not open or edit its live PGlite files. Read [docs/agent-integration.md](docs/agent-integration.md) first.

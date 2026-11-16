@@ -4,7 +4,7 @@ import {
 } from "@modelcontextprotocol/client";
 
 export async function connectAgent() {
-  const baseURL = (process.env.MEFAGRAM_URL ?? "http://127.0.0.1:3000").replace(
+  const baseURL = (process.env.MEFAGRAM_URL ?? "http://127.0.0.1:4747").replace(
     /\/$/,
     "",
   );

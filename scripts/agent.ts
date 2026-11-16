@@ -4,7 +4,7 @@ import { connectAgent } from "./agent-access";
 const [command, argument, file] = process.argv.slice(2);
 if (!command || command === "--help") {
   console.log(
-    `Mefagram agent CLI (uses the local MCP endpoint)\n\n  npm run agent -- tools\n  npm run agent -- list [search]\n  npm run agent -- get <diagram-id>\n  npm run agent -- history <diagram-id>\n  npm run agent -- export <diagram-id>\n  npm run agent -- call <tool-name> <arguments.json>\n\nConnects to http://127.0.0.1:3000 unless MEFAGRAM_URL is set.`,
+    `Mefagram agent CLI (uses the local MCP endpoint)\n\n  npm run agent -- tools\n  npm run agent -- list [search]\n  npm run agent -- get <diagram-id>\n  npm run agent -- history <diagram-id>\n  npm run agent -- export <diagram-id>\n  npm run agent -- call <tool-name> <arguments.json>\n\nConnects to http://127.0.0.1:4747 unless MEFAGRAM_URL is set.`,
   );
   process.exit(0);
 }
