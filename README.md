@@ -61,7 +61,7 @@ The agent starts the workspace when it needs it. Open it yourself with `npx mefa
 
 ## Features
 
-| | |
+| Feature | What it does |
 | --- | --- |
 | **Ask, don't draw** | Agents create maps from Mermaid, which they already write fluently, then add descriptions, notes, sources and code links with atomic edits. |
 | **Talk back** | Comment on any node or diagram. The agent reads it with `get_feedback`, changes the map and replies in the thread. It can ask you questions too. |
@@ -89,7 +89,7 @@ Every result includes a `viewUrl` the agent can hand you. Details, examples and 
 
 ## Command line
 
-| Command | |
+| Command | What it does |
 | --- | --- |
 | `npx mefagram mcp` | MCP over stdio; starts the workspace if needed |
 | `npx mefagram open [id]` | Open the workspace in your browser |
