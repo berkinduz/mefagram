@@ -52,6 +52,16 @@
             "maxLength": 40
           }
         },
+        "project": {
+          "default": "",
+          "type": "string",
+          "maxLength": 80
+        },
+        "projectRoot": {
+          "default": "",
+          "type": "string",
+          "maxLength": 1024
+        },
         "document": {
           "type": "object",
           "properties": {
@@ -130,6 +140,34 @@
                       "maxLength": 40
                     }
                   },
+                  "code": {
+                    "default": [],
+                    "maxItems": 30,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 1024
+                        },
+                        "line": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10000000
+                        },
+                        "label": {
+                          "type": "string",
+                          "maxLength": 160
+                        }
+                      },
+                      "required": [
+                        "path"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
                   "parentId": {
                     "anyOf": [
                       {
@@ -172,7 +210,8 @@
                   "description",
                   "notes",
                   "sources",
-                  "tags"
+                  "tags",
+                  "code"
                 ],
                 "additionalProperties": false
               }
@@ -233,6 +272,8 @@
         "title",
         "description",
         "tags",
+        "project",
+        "projectRoot",
         "document"
       ],
       "additionalProperties": false

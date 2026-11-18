@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="986" height="440" viewBox="0 0 986 440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>How Mefagram works</title>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8a97ad"/></marker></defs>
+<rect width="100%" height="100%" fill="#f8fafc"/>
+<text x="32" y="40" font-size="18" font-weight="600" fill="#273650">How Mefagram works</text>
+<g transform="translate(32 88)">
+<polyline points="286,83 354,83" fill="none" stroke="#8a97ad" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="604,83 672,83" fill="none" stroke="#8a97ad" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="797,138 797,174 797,174 797,210" fill="none" stroke="#8a97ad" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="672,265 604,265" fill="none" stroke="#8a97ad" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="354,265 286,265" fill="none" stroke="#8a97ad" stroke-width="1.5" marker-end="url(#arrow)"/>
+<g transform="translate(36 28)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#6c7eaf"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">You ask in chat</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">“Map how checkout works in this repo.”</text>
+</g>
+<g transform="translate(354 28)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#639183"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">Agent builds the map</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">Mermaid or precise edits over MCP,</text>
+<text x="17" y="70" font-size="12" fill="#5f6f87">with notes and code links.</text>
+</g>
+<g transform="translate(672 28)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#af926c"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">You explore it live</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">Open phases, read details, jump to</text>
+<text x="17" y="70" font-size="12" fill="#5f6f87">code. Changes light up.</text>
+</g>
+<g transform="translate(672 210)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#9783b6"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">You comment on a step</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">“Split this step.” “What about</text>
+<text x="17" y="70" font-size="12" fill="#5f6f87">refunds?”</text>
+</g>
+<g transform="translate(354 210)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#7999ad"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">Agent updates and replies</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">Reads your feedback, edits the map,</text>
+<text x="17" y="70" font-size="12" fill="#5f6f87">answers in the thread.</text>
+</g>
+<g transform="translate(36 210)">
+<rect width="250" height="110" rx="9" fill="#fff" stroke="#d7dfeb"/>
+<rect width="4" height="92" x="0" y="9" rx="2" fill="#7b8aa7"/>
+<text x="17" y="30" font-size="15" font-weight="700" fill="#334561">Keep it with your code</text>
+<text x="17" y="52" font-size="12" fill="#5f6f87">Export Mermaid, SVG or JSON next to</text>
+<text x="17" y="70" font-size="12" fill="#5f6f87">your code.</text>
+</g>
+</g></svg>
